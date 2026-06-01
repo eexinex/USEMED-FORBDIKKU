@@ -45,7 +45,9 @@ if (!function_exists('detect_app_base')) {
             }
         }
 
-        return '/usemed/public';
+        // If we are here, we are likely running directly from DocumentRoot (e.g. Docker / HF Spaces)
+        // Return empty string so APP_URL becomes '' and paths start with '/'
+        return '';
     }
 }
 
