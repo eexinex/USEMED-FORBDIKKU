@@ -4,7 +4,13 @@
 
 declare(strict_types=1);
 
+// START SESSION
 if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'secure' => true,
+        'httponly' => true,
+        'samesite' => 'None'
+    ]);
     session_start();
 }
 
