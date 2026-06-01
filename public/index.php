@@ -8,10 +8,11 @@ function file_ok(string $path): bool
 }
 
 $patientLink = file_ok('patient/login.php') ? 'patient/login.php' : 'patient/portal.php';
-$doctorLink  = file_ok('doctor/login.php') ? 'doctor/login.php' : 'doctor/dashboard.php';
+$doctorLink = file_ok('doctor/login.php') ? 'doctor/login.php' : 'doctor/dashboard.php';
 ?>
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -285,82 +286,83 @@ $doctorLink  = file_ok('doctor/login.php') ? 'doctor/login.php' : 'doctor/dashbo
 </head>
 
 <body>
-<div class="page">
+    <div class="page">
 
-    <header class="hero">
-        <div class="logo">＋</div>
+        <header class="hero">
+            <div class="logo">＋</div>
 
-        <h1>USE MED</h1>
+            <h1>USE MED (v1.6)</h1>
 
-        <p class="subtitle">
-            ระบบจัดการข้อมูลสุขภาพสำหรับผู้ป่วยและแพทย์
-            รองรับการบันทึกข้อมูลจริง เอกสาร ไทม์ไลน์ และ AI Risk Module
-        </p>
+            <p class="subtitle">
+                ระบบจัดการข้อมูลสุขภาพสำหรับผู้ป่วยและแพทย์
+                รองรับการบันทึกข้อมูลจริง เอกสาร ไทม์ไลน์ และ AI Risk Module
+            </p>
 
-        <div class="features">
-            <span class="chip">บันทึกข้อมูลจริง</span>
-            <span class="chip">ดูเอกสารและ Timeline</span>
-            <span class="chip">รองรับ LINE Bot</span>
-            <span class="chip">AI Risk Module</span>
-        </div>
-    </header>
+            <div class="features">
+                <span class="chip">บันทึกข้อมูลจริง</span>
+                <span class="chip">ดูเอกสารและ Timeline</span>
+                <span class="chip">รองรับ LINE Bot</span>
+                <span class="chip">AI Risk Module</span>
+            </div>
+        </header>
 
-    <main class="main">
-        <section class="role-grid">
+        <main class="main">
+            <section class="role-grid">
 
-            <a class="role-card patient" href="<?= htmlspecialchars($patientLink, ENT_QUOTES, 'UTF-8') ?>">
-                <div>
-                    <div class="role-icon">👤</div>
-                    <h2>คนไข้</h2>
-                    <p>
-                        เข้าสู่ระบบเพื่อดูข้อมูลส่วนตัว เอกสารทางการแพทย์
-                        ไทม์ไลน์การรักษา และรายละเอียดการเข้ารับบริการ
-                    </p>
-                </div>
+                <a class="role-card patient" href="<?= htmlspecialchars($patientLink, ENT_QUOTES, 'UTF-8') ?>">
+                    <div>
+                        <div class="role-icon">👤</div>
+                        <h2>คนไข้</h2>
+                        <p>
+                            เข้าสู่ระบบเพื่อดูข้อมูลส่วนตัว เอกสารทางการแพทย์
+                            ไทม์ไลน์การรักษา และรายละเอียดการเข้ารับบริการ
+                        </p>
+                    </div>
 
-                <div class="cta">เข้าสู่หน้าคนไข้</div>
-            </a>
+                    <div class="cta">เข้าสู่หน้าคนไข้</div>
+                </a>
 
-            <a class="role-card doctor" href="<?= htmlspecialchars($doctorLink, ENT_QUOTES, 'UTF-8') ?>">
-                <div>
-                    <div class="role-icon">🩺</div>
-                    <h2>หมอ</h2>
-                    <p>
-                        เข้าสู่ระบบเพื่อค้นหาผู้ป่วย ลงทะเบียน เพิ่มการรักษา
-                        อัปโหลดเอกสาร ส่งต่อ และจัดการข้อมูลทางการแพทย์
-                    </p>
-                </div>
+                <a class="role-card doctor" href="<?= htmlspecialchars($doctorLink, ENT_QUOTES, 'UTF-8') ?>">
+                    <div>
+                        <div class="role-icon">🩺</div>
+                        <h2>หมอ</h2>
+                        <p>
+                            เข้าสู่ระบบเพื่อค้นหาผู้ป่วย ลงทะเบียน เพิ่มการรักษา
+                            อัปโหลดเอกสาร ส่งต่อ และจัดการข้อมูลทางการแพทย์
+                        </p>
+                    </div>
 
-                <div class="cta">เข้าสู่หน้าหมอ</div>
-            </a>
+                    <div class="cta">เข้าสู่หน้าหมอ</div>
+                </a>
 
-        </section>
-    </main>
+            </section>
+        </main>
 
-    <footer class="footer">
-        <div>
-            © <?= date('Y') ?> USE MED. Created by <strong>ธัญญชล จำปาศักดิ์</strong>. All rights reserved.
-        </div>
+        <footer class="footer">
+            <div>
+                © <?= date('Y') ?> USE MED. Created by <strong>ธัญญชล จำปาศักดิ์</strong>. All rights reserved.
+            </div>
 
-        <div class="footer-links">
-            <?php if (file_ok('about.php')): ?>
-                <a href="about.php">About</a>
-            <?php endif; ?>
+            <div class="footer-links">
+                <?php if (file_ok('about.php')): ?>
+                    <a href="about.php">About</a>
+                <?php endif; ?>
 
-            <?php if (file_ok('support.php')): ?>
-                <a href="support.php">Support</a>
-            <?php endif; ?>
+                <?php if (file_ok('support.php')): ?>
+                    <a href="support.php">Support</a>
+                <?php endif; ?>
 
-            <?php if (file_ok('admin/login.php')): ?>
-                <a href="admin/login.php">Admin</a>
-            <?php endif; ?>
+                <?php if (file_ok('admin/login.php')): ?>
+                    <a href="admin/login.php">Admin</a>
+                <?php endif; ?>
 
-            <?php if (file_ok('check.php')): ?>
-                <a href="check.php">ตรวจระบบ</a>
-            <?php endif; ?>
-        </div>
-    </footer>
+                <?php if (file_ok('check.php')): ?>
+                    <a href="check.php">ตรวจระบบ</a>
+                <?php endif; ?>
+            </div>
+        </footer>
 
-</div>
+    </div>
 </body>
+
 </html>
