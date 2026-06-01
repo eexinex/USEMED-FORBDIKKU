@@ -291,7 +291,7 @@ $doctorLink = file_ok('doctor/login.php') ? 'doctor/login.php' : 'doctor/dashboa
         <header class="hero">
             <div class="logo">＋</div>
 
-            <h1>USE MED (v1.6)</h1>
+            <h1>USE MED</h1>
 
             <p class="subtitle">
                 ระบบจัดการข้อมูลสุขภาพสำหรับผู้ป่วยและแพทย์
