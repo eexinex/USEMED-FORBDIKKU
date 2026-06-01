@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 // START SESSION
 if (session_status() === PHP_SESSION_NONE) {
+    session_save_path('/tmp');
     session_set_cookie_params([
         'secure' => true,
         'httponly' => true,
