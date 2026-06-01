@@ -1,0 +1,8 @@
+USE MED v9 Complete No Feature Loss
+
+แก้ตาม feedback ล่าสุด:
+1. แยกช่องกรอก HbA1c / FPG / BP(SBP/DBP) / BMI ใน add-treatment.php และ register-patient.php
+2. เพิ่มปุ่มกลับแบบ global ใน layout ทุกหน้าที่ใช้ระบบหลังบ้าน
+3. Dashboard cards Patients / Visits / High Risk / ICU คลิกดูรายชื่อได้ผ่าน doctor/stat-list.php
+4. SQL seed ปรับให้มี Patients=100, Visits=312, High Risk=18, ICU=10 ตาม dashboard demo
+5. ไม่ตัดฟีเจอร์เดิม: LINE Rich Menu, patient/doctor/admin, PDF documents, AI risk, ICU, support, timeline, add treatment, register patient ยังอยู่ครบ

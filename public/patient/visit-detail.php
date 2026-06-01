@@ -1,0 +1,442 @@
+<?php
+// public/patient/visit-detail.php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../../backend/shared/layout.php';
+
+require_login('patient');
+
+$user = current_user();
+
+$patient = demo_patient();
+$visits = demo_visits();
+$documents = demo_documents();
+
+$visitId = (int) ($_GET['id'] ?? 1);
+$visit = $visits[0] ?? [];
+
+foreach ($visits as $item) {
+    if ((int) ($item['id'] ?? 0) === $visitId) {
+        $visit = $item;
+        break;
+    }
+}
+
+if (db_is_connected()) {
+    $patientRow = db_fetch_one(
+        'SELECT * FROM patients WHERE hn = :hn LIMIT 1',
+        [
+            'hn' => $user['hn'] ?? 'HN0001',
+        ]
+    );
+
+    if ($patientRow) {
+        $patient = array_merge($patient, $patientRow);
+
+        $dbVisit = db_fetch_one(
+            'SELECT 
+                v.*,
+                d.full_name AS doctor_name
+            FROM visits v
+            LEFT JOIN doctors d ON d.id = v.doctor_id
+            WHERE v.id = :id
+            AND v.patient_id = :patient_id
+            LIMIT 1',
+            [
+                'id' => $visitId,
+                'patient_id' => (int) $patientRow['id'],
+            ]
+        );
+
+        if ($dbVisit) {
+            $visit = $dbVisit;
+        }
+
+        $dbDocuments = db_fetch_all(
+            'SELECT *
+            FROM documents
+            WHERE patient_id = :patient_id
+            ORDER BY created_at DESC, id DESC',
+            [
+                'patient_id' => (int) $patientRow['id'],
+            ]
+        );
+
+        if (!empty($dbDocuments)) {
+            $documents = $dbDocuments;
+        }
+    }
+}
+
+$date = $visit['date'] ?? $visit['visit_date'] ?? '-';
+$title = $visit['title'] ?? 'รายละเอียดการรักษา';
+$doctorName = $visit['doctor'] ?? $visit['doctor_name'] ?? 'นพ.กิตติ ภัทรเวช';
+$diagnosis = $visit['diagnosis'] ?? '-';
+$treatmentPlan = $visit['treatment_plan'] ?? $visit['summary'] ?? '-';
+$summary = $visit['summary'] ?? $diagnosis;
+
+$riskLevel = $visit['risk'] ?? $visit['risk_level'] ?? 'Medium';
+$riskScore = (int) ($visit['risk_score'] ?? 62);
+$riskBadge = badge_class((string) $riskLevel);
+
+$systolic = $visit['systolic'] ?? 148;
+$diastolic = $visit['diastolic'] ?? 92;
+$pulse = $visit['pulse'] ?? 78;
+$glucose = $visit['glucose'] ?? 142;
+$hba1c = $visit['hba1c'] ?? 7.8;
+$bmi = $visit['bmi'] ?? 27.4;
+$cholesterol = $visit['cholesterol'] ?? 218;
+$visitType = usemed_visit_field($visit, 'visit_type', '-');
+$visitReason = usemed_visit_field($visit, 'visit_reason', '-');
+$careArea = usemed_visit_field($visit, 'care_area', '-');
+$hospital = usemed_visit_field($visit, 'hospital', '-');
+$paymentMethod = usemed_visit_field($visit, 'payment_method', '-');
+$insuranceDetail = usemed_visit_field($visit, 'insurance_detail', '-');
+$bloodGroup = usemed_visit_field($visit, 'blood_group', '-');
+$weightKg = usemed_visit_field($visit, 'weight_kg', '-');
+$heightCm = usemed_visit_field($visit, 'height_cm', '-');
+$temperature = usemed_visit_field($visit, 'temperature', '-');
+$respiratoryRate = usemed_visit_field($visit, 'respiratory_rate', '-');
+$oxygenSaturation = usemed_visit_field($visit, 'oxygen_saturation', '-');
+$alcoholUse = usemed_visit_field($visit, 'alcohol_use', '-');
+$smokingStatus = usemed_visit_field($visit, 'smoking_status', '-');
+$hasSurgery = usemed_visit_field($visit, 'has_surgery', '-');
+$surgeryType = usemed_visit_field($visit, 'surgery_type', '-');
+$surgeryNote = usemed_visit_field($visit, 'surgery_note', '-');
+$hasMenstruation = usemed_visit_field($visit, 'has_menstruation', '-');
+$lastMenstrualPeriod = usemed_visit_field($visit, 'last_menstrual_period', '-');
+$investigations = usemed_visit_field($visit, 'investigations', '-');
+$labResults = usemed_visit_field($visit, 'lab_results', '-');
+$urineResults = usemed_visit_field($visit, 'urine_results', '-');
+$xrayResults = usemed_visit_field($visit, 'xray_results', '-');
+$mriResults = usemed_visit_field($visit, 'mri_results', '-');
+$imagingResults = usemed_visit_field($visit, 'imaging_results', '-');
+$doctorEducation = usemed_visit_field($visit, 'doctor_education', '-');
+$nextAppointmentDetail = usemed_visit_field($visit, 'next_appointment_detail', '-');
+$followupDate = usemed_visit_field($visit, 'followup_date', '-');
+
+page_start('รายละเอียดการรักษา', 'patient', 'timeline');
+
+topbar(
+    'Visit Detail',
+    'รายละเอียดการตรวจ วินิจฉัย แผนรักษา และผลประเมินความเสี่ยงของคุณ'
+);
+?>
+
+<section class="stat-grid">
+    <?php stat_card('วันที่ตรวจ', (string) $date, 'Visit Date'); ?>
+    <?php stat_card('HN', (string) ($patient['hn'] ?? 'HN0001'), 'Patient ID'); ?>
+    <?php stat_card('Risk Score', $riskScore . '/100', (string) $riskLevel); ?>
+    <?php stat_card('แพทย์ผู้ตรวจ', (string) $doctorName, 'Doctor'); ?>
+</section>
+
+<section class="grid grid-2">
+    <div class="card">
+        <h2><?= e($title) ?></h2>
+        <p class="text-muted">
+            รายละเอียดการรักษานี้เป็นข้อมูลจากระบบ USE MED
+            ใช้สำหรับให้ผู้ป่วยติดตามสุขภาพและประวัติการรักษาของตนเอง
+        </p>
+
+        <div class="document-grid mt-2">
+            <div class="document-card">
+                <div>
+                    <strong>ผู้ป่วย</strong>
+                    <span><?= e($patient['full_name'] ?? '-') ?> / <?= e($patient['hn'] ?? '-') ?></span>
+                </div>
+                <span class="badge blue">Patient</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>แพทย์ผู้ตรวจ</strong>
+                    <span><?= e($doctorName) ?></span>
+                </div>
+                <span class="badge green">Doctor</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>วันที่ตรวจ</strong>
+                    <span><?= e($date) ?></span>
+                </div>
+                <span class="badge orange">Visit</span>
+            </div>
+        </div>
+
+        <div class="btn-row mt-2">
+            <button class="btn" type="button" data-print>
+                พิมพ์ Visit
+            </button>
+
+            <a class="btn secondary" href="<?= e(app_url('patient/timeline.php')) ?>">
+                กลับ Timeline
+            </a>
+
+            <a class="btn secondary" href="<?= e(app_url('patient/portal.php')) ?>">
+                กลับหน้าหลัก
+            </a>
+        </div>
+    </div>
+
+    <div class="risk-card">
+        <div class="risk-score">
+            <div>
+                <span class="badge <?= e($riskBadge) ?>">
+                    Risk <?= e($riskLevel) ?>
+                </span>
+
+                <h2 style="margin:12px 0 6px;">
+                    คะแนนความเสี่ยง <?= e($riskScore) ?>/100
+                </h2>
+
+                <p class="text-muted">
+                    ประเมินจากข้อมูล Vital Signs และ Lab ของ Visit นี้
+                </p>
+            </div>
+
+            <div class="score-circle" style="--value:<?= e($riskScore) ?>">
+                <strong><?= e($riskScore) ?></strong>
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <div class="riskbar">
+                <span style="width:<?= e($riskScore) ?>%"></span>
+            </div>
+        </div>
+
+        <ul class="factor-list">
+            <li>BP: <?= e($systolic) ?>/<?= e($diastolic) ?> mmHg</li>
+            <li>Glucose: <?= e($glucose) ?> mg/dL</li>
+            <li>HbA1c: <?= e($hba1c) ?>%</li>
+        </ul>
+    </div>
+</section>
+
+<section class="grid grid-2 mt-2">
+    <div class="card">
+        <h2>Diagnosis</h2>
+        <div class="note-box mt-2">
+            <?= nl2br(e($diagnosis)) ?>
+        </div>
+
+        <h2 class="mt-2">Treatment Plan</h2>
+        <div class="note-box mt-2">
+            <?= nl2br(e($treatmentPlan)) ?>
+        </div>
+
+        <h2 class="mt-2">Summary</h2>
+        <p><?= nl2br(e($summary)) ?></p>
+    </div>
+
+    <div class="card">
+        <h2>Vital Signs / Lab</h2>
+
+        <div class="document-grid mt-2">
+            <div class="document-card">
+                <div>
+                    <strong>Blood Pressure</strong>
+                    <span><?= e($systolic) ?>/<?= e($diastolic) ?> mmHg</span>
+                </div>
+                <span class="badge orange">BP</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>Pulse</strong>
+                    <span><?= e($pulse) ?> bpm</span>
+                </div>
+                <span class="badge blue">Pulse</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>Glucose</strong>
+                    <span><?= e($glucose) ?> mg/dL</span>
+                </div>
+                <span class="badge orange">Sugar</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>HbA1c</strong>
+                    <span><?= e($hba1c) ?>%</span>
+                </div>
+                <span class="badge orange">HbA1c</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>BMI</strong>
+                    <span><?= e($bmi) ?></span>
+                </div>
+                <span class="badge blue">BMI</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>Cholesterol</strong>
+                    <span><?= e($cholesterol) ?> mg/dL</span>
+                </div>
+                <span class="badge blue">Lipid</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="grid grid-2 mt-2">
+    <div class="card">
+        <h2>ข้อมูลผู้ป่วย</h2>
+
+        <div class="document-grid mt-2">
+            <div class="document-card">
+                <div>
+                    <strong><?= e($patient['full_name'] ?? '-') ?></strong>
+                    <span>HN: <?= e($patient['hn'] ?? '-') ?></span>
+                </div>
+                <span class="badge blue">Profile</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>อายุ / เพศ</strong>
+                    <span><?= e($patient['age'] ?? '-') ?> ปี / <?= e($patient['gender'] ?? '-') ?></span>
+                </div>
+                <span class="badge green">Info</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>โรคประจำตัว</strong>
+                    <span><?= e($patient['disease'] ?? '-') ?></span>
+                </div>
+                <span class="badge red">Chronic</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>เอกสารที่เกี่ยวข้อง</h2>
+
+        <?php if (empty($documents)): ?>
+            <?php render_empty_state('ยังไม่มีเอกสาร', 'ยังไม่มีเอกสารที่เกี่ยวข้องกับ Visit นี้'); ?>
+        <?php else: ?>
+            <div class="document-grid mt-2">
+                <?php foreach ($documents as $doc): ?>
+                    <?php
+                    $docId = (int) ($doc['id'] ?? 1);
+                    $docTitle = $doc['title'] ?? 'เอกสารสุขภาพ';
+                    $docType = $doc['document_type'] ?? $doc['type'] ?? 'PDF';
+                    $docDate = $doc['created_at'] ?? $doc['date'] ?? '-';
+                    ?>
+
+                    <a class="document-card" href="<?= e(app_url('patient/document-view.php?id=' . $docId)) ?>">
+                        <div>
+                            <strong><?= e($docTitle) ?></strong>
+                            <span><?= e($docDate) ?></span>
+                        </div>
+                        <span class="badge blue"><?= e($docType) ?></span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</section>
+
+
+<section class="grid grid-2 mt-2">
+    <div class="card">
+        <h2>รายละเอียด Visit / สิทธิรักษา</h2>
+        <div class="document-grid mt-2">
+            <div class="document-card"><div><strong>ประเภทการมา</strong><span><?= e($visitType) ?> · <?= e($careArea) ?></span></div><span class="badge blue">Visit</span></div>
+            <div class="document-card"><div><strong>มาด้วยเรื่อง</strong><span><?= e($visitReason) ?></span></div><span class="badge orange">CC</span></div>
+            <div class="document-card"><div><strong>โรงพยาบาล</strong><span><?= e($hospital) ?></span></div><span class="badge green">Hospital</span></div>
+            <div class="document-card"><div><strong>สิทธิ/การชำระเงิน</strong><span><?= e($paymentMethod) ?> · <?= e($insuranceDetail) ?></span></div><span class="badge blue">Payment</span></div>
+            <div class="document-card"><div><strong>กรุ๊ปเลือด</strong><span><?= e($bloodGroup) ?></span></div><span class="badge red">Blood</span></div>
+            <div class="document-card"><div><strong>สุรา / บุหรี่</strong><span><?= e($alcoholUse) ?> · <?= e($smokingStatus) ?></span></div><span class="badge orange">Behavior</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>ผ่าตัด / ประจำเดือน / นัดหมาย</h2>
+        <div class="document-grid mt-2">
+            <div class="document-card"><div><strong>ผ่าตัด</strong><span><?= e($hasSurgery) ?> · <?= e($surgeryType) ?></span></div><span class="badge red">Surgery</span></div>
+            <div class="document-card"><div><strong>รายละเอียดผ่าตัด</strong><span><?= e($surgeryNote) ?></span></div><span class="badge orange">Note</span></div>
+            <div class="document-card"><div><strong>ประจำเดือน</strong><span><?= e($hasMenstruation) ?> · LMP: <?= e($lastMenstrualPeriod) ?></span></div><span class="badge blue">OB</span></div>
+            <div class="document-card"><div><strong>นัดติดตาม</strong><span><?= e($followupDate) ?> · <?= e($nextAppointmentDetail) ?></span></div><span class="badge green">Follow-up</span></div>
+        </div>
+    </div>
+</section>
+
+<section class="grid grid-2 mt-2">
+    <div class="card">
+        <h2>ผลตรวจเพิ่มเติม</h2>
+        <div class="document-grid mt-2">
+            <div class="document-card"><div><strong>ตรวจที่สั่ง</strong><span><?= e($investigations) ?></span></div><span class="badge green">Orders</span></div>
+            <div class="document-card"><div><strong>ผลตรวจเลือด</strong><span><?= e($labResults) ?></span></div><span class="badge red">Blood</span></div>
+            <div class="document-card"><div><strong>ผลปัสสาวะ</strong><span><?= e($urineResults) ?></span></div><span class="badge blue">Urine</span></div>
+            <div class="document-card"><div><strong>X-ray</strong><span><?= e($xrayResults) ?></span></div><span class="badge orange">X-ray</span></div>
+            <div class="document-card"><div><strong>MRI</strong><span><?= e($mriResults) ?></span></div><span class="badge orange">MRI</span></div>
+            <div class="document-card"><div><strong>Imaging อื่น ๆ</strong><span><?= e($imagingResults) ?></span></div><span class="badge blue">Imaging</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>คำแนะนำให้ผู้ป่วย</h2>
+        <div class="note-box mt-2"><?= nl2br(e($doctorEducation)) ?></div>
+        <h2 class="mt-2">ข้อมูลร่างกายเพิ่มเติม</h2>
+        <div class="document-grid mt-2">
+            <div class="document-card"><div><strong>น้ำหนัก / ส่วนสูง</strong><span><?= e($weightKg) ?> kg · <?= e($heightCm) ?> cm</span></div><span class="badge blue">Body</span></div>
+            <div class="document-card"><div><strong>Temp / RR / SpO₂</strong><span><?= e($temperature) ?>°C · RR <?= e($respiratoryRate) ?> · SpO₂ <?= e($oxygenSaturation) ?>%</span></div><span class="badge green">Vital</span></div>
+        </div>
+    </div>
+</section>
+
+<section class="card mt-2">
+    <h2>คำแนะนำ</h2>
+
+    <div class="document-grid mt-2">
+        <div class="document-card">
+            <div>
+                <strong>ติดตามอาการต่อเนื่อง</strong>
+                <span>ควรติดตามสุขภาพตามคำแนะนำของแพทย์และมาตามนัดหมาย</span>
+            </div>
+            <span class="badge green">Follow-up</span>
+        </div>
+
+        <div class="document-card">
+            <div>
+                <strong>ดูเอกสารประกอบ</strong>
+                <span>ตรวจสอบผลตรวจ ใบนัด และสรุปการรักษาในหน้า Documents</span>
+            </div>
+            <span class="badge blue">Document</span>
+        </div>
+
+        <div class="document-card">
+            <div>
+                <strong>แจ้งปัญหา</strong>
+                <span>หากข้อมูลไม่ถูกต้อง สามารถแจ้งผ่านหน้า Support ได้</span>
+            </div>
+            <span class="badge red">Support</span>
+        </div>
+    </div>
+
+    <div class="btn-row mt-2">
+        <a class="btn" href="<?= e(app_url('patient/documents.php')) ?>">
+            เปิดเอกสาร
+        </a>
+
+        <a class="btn secondary" href="<?= e(app_url('patient/timeline.php')) ?>">
+            กลับ Timeline
+        </a>
+
+        <a class="btn secondary" href="<?= e(app_url('support.php')) ?>">
+            แจ้งปัญหา
+        </a>
+    </div>
+</section>
+
+<?php
+page_end();

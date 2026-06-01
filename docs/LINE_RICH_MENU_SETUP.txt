@@ -1,0 +1,33 @@
+วิธีลง LINE Rich Menu ให้กดเข้าเว็บ USE MED จริง
+
+สิ่งที่ต้องมี
+1) LINE Official Account + Messaging API channel
+2) Hosting/Server ที่เป็น HTTPS เช่น https://your-domain.com/usemed
+3) Import MySQL จาก backend/database/schema.sql แล้ว
+4) ตั้งค่า ENV หรือแก้ backend/config.php
+   USEMED_PUBLIC_URL=https://your-domain.com/usemed
+   LINE_CHANNEL_ACCESS_TOKEN=Channel access token long-lived
+   LINE_CHANNEL_SECRET=Channel secret
+
+ตำแหน่งปุ่ม Rich Menu
+- ปุ่มซ้าย: ผู้ป่วย -> https://your-domain.com/usemed/patient/login.php
+- ปุ่มขวา: แพทย์ -> https://your-domain.com/usemed/doctor/login.php
+
+ขั้นตอน
+1) Upload โฟลเดอร์ public/ ไปเป็น public path ของเว็บ เช่น /var/www/html/usemed
+2) วาง backend/ ไว้ระดับเดียวกับ public/ ถ้าใช้โครงสร้างนี้:
+   /var/www/html/usemed        = public/
+   /var/www/html/backend       = backend/
+   หรือปรับ path require ตาม hosting ของตัวเอง
+3) ตั้ง Webhook URL ใน LINE Developers Console:
+   https://your-domain.com/usemed/line-bot/webhook.php
+4) เปิด Use webhook = Enabled
+5) รันคำสั่งจาก server:
+   cd /var/www/html/usemed/line-bot
+   php setup-rich-menu.php
+6) เพิ่มเพื่อน Official Account แล้วจะเห็น Rich Menu 2 ปุ่ม ผู้ป่วย / แพทย์
+
+หมายเหตุ
+- webhook.php มีการตรวจ X-Line-Signature ด้วย Channel Secret
+- setup-rich-menu.php จะ create rich menu, upload image, แล้ว set default rich menu ให้ทุกคนที่เพิ่มเพื่อน
+- ถ้าปุ่มกดไม่ได้ ให้ตรวจ USEMED_PUBLIC_URL ต้องเป็น HTTPS และเปิดจากมือถือได้จริง

@@ -1,0 +1,26 @@
+แยกฝั่งผู้ป่วย / แพทย์
+
+ฝั่งผู้ป่วย ใส่ใน public/patient/
+- login.php            Login ด้วย HN + password
+- portal.php           ดูข้อมูลสุขภาพ, AI risk ล่าสุด, นัดติดตาม, timeline ล่าสุด 3 รายการ
+- timeline.php         ดู timeline ทั้งหมด
+- visit-detail.php     ดูรายละเอียด visit แต่ละโรงพยาบาล: เข้ารพ.เพราะอะไร, โรค, ยา, ยาฉีด, วัคซีน, นัด
+- documents.php        ดูเอกสาร PDF ของตัวเอง
+
+ฝั่งแพทย์ ใส่ใน public/doctor/
+- login.php            Login แพทย์
+- dashboard.php        ค้นหา HN, เปิดข้อมูลผู้ป่วย
+- register-patient.php ลงทะเบียนคนไข้ใหม่ + เลือกโรค/กลุ่มเสี่ยง
+- patient-profile.php  ดู profile ผู้ป่วย + timeline + ปุ่มเพิ่มการรักษา
+- add-treatment.php    เพิ่ม visit/การรักษา/ยา/ยาฉีด/วัคซีน/นัด/เบาหวาน/ความดัน ลง MySQL จริง
+- documents.php        สร้างใบรับรองแพทย์ รายงานอาการ ใบส่งตรวจ Lab ใบส่งต่อ
+- document-view.php    preview/print PDF
+- ai-risk.php          วิเคราะห์ AI จากข้อมูลในฐานข้อมูล
+- icu.php              บันทึกข้อมูล ICU ventilator และประเมินความเสี่ยง
+
+ฝั่ง Admin ใส่ใน public/admin/
+- dashboard.php        ดู ticket ปัญหาการใช้งานจากผู้ป่วย/แพทย์
+- login.php/logout.php
+
+ฐานข้อมูลที่ใช้ร่วมกันอยู่ backend/database/schema.sql
+ข้อมูลเชื่อมกันด้วย patient_id และ hn

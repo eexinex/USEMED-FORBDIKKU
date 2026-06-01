@@ -1,0 +1,26 @@
+USE MED v8 - โครงสร้างโค้ด
+
+public/  = โฟลเดอร์ที่ต้องวางใน htdocs หรือ public_html เพื่อให้ LINE เปิดเว็บได้
+  index.php               หน้าแรก 2 ปุ่ม ผู้ป่วย/แพทย์
+  patient/                ฝั่งผู้ป่วย: login, portal, timeline, visit-detail, documents
+  doctor/                 ฝั่งแพทย์: login, dashboard, register-patient, add-treatment, documents, ai-risk, icu
+  admin/                  ฝั่งผู้ดูแลระบบ 5 คน
+  line-bot/               webhook + setup-rich-menu.php + รูป rich menu
+  assets/                 CSS/JS ที่หน้าเว็บจริงเรียกใช้
+
+backend/ = โค้ดหลังบ้าน ไม่ควรให้ user เปิดตรง ๆ
+  config.php              ตั้งค่า APP_URL, LINE token, database env
+  database/connect.php    PDO connect MySQL
+  database/schema.sql     SQL schema + seed ผู้ป่วย 100 คน + admin 5 คน + sample visits
+  shared/auth.php         login/session/role guard
+  shared/ai_engine.php    AI rule-based risk engine เบาหวาน/ความดัน/ICU
+  shared/layout.php       layout กลางของ doctor/patient/admin
+
+frontend/ = แยกไฟล์หน้าบ้านตามภาษา
+  css/usemed.css
+  js/app.js
+  richmenu/richmenu-usemed.png
+
+preview/ = ไฟล์ HTML กดดู flow ได้ ไม่ต้องรัน server
+
+การใช้งานจริง: เอา public/ ไปวางเป็น htdocs/usemed และแก้ backend/config.php หรือ ENV ให้ถูกต้อง

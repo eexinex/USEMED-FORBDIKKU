@@ -1,0 +1,9 @@
+USE MED v10 Patient View Only Fix
+
+สิ่งที่แก้:
+1. ฝั่งผู้ป่วยดูข้อมูลตัวเองเท่านั้น ไม่มีปุ่มเพิ่มการรักษา/ลงทะเบียน/AI/ICU ของแพทย์
+2. patient/portal.php และ patient/timeline.php ไป patient/visit-detail.php เท่านั้น
+3. เอกสารของผู้ป่วยเปิดผ่าน patient/document-view.php และตรวจ patient_id ทุกครั้ง
+4. doctor/document-view.php จำกัดเฉพาะ role doctor แล้ว
+5. Preview แยก role จริง: ผู้ป่วยเห็นเฉพาะ Portal, Timeline, Documents, Support ส่วนแพทย์เห็น Dashboard, Register, Add Treatment, PDF, ICU, AI
+6. ข้อมูลยังเชื่อม database เดียวกัน: แพทย์บันทึก visits/medications/injections/vaccines/appointments/diabetes_followups แล้วผู้ป่วยอ่าน timeline จากฐานข้อมูลเดียวกัน

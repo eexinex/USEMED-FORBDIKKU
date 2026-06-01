@@ -1,0 +1,12 @@
+USE MED v11 - Login / Route / Vertical Form Fix
+
+แก้ตามคำขอ:
+1) ผู้ป่วยต้อง login ก่อนเสมอ ไม่สามารถเข้าหน้า portal/timeline/detail/documents ได้ถ้าไม่ login
+2) แพทย์ต้อง login ก่อนเสมอ ไม่สามารถเข้าหลังบ้านหรือหน้ากรอกข้อมูลได้ถ้าไม่ login
+3) ถ้า role ผิด เช่น ผู้ป่วยพยายามเปิด URL ฝั่งแพทย์ ระบบจะล้าง session แล้วส่งไปหน้า login ของ role นั้น ไม่พาไปผิดหน้า
+4) LINE Rich Menu มี 2 ทางเข้าเท่านั้น:
+   - /patient/login.php สำหรับผู้ป่วย
+   - /doctor/login.php สำหรับแพทย์
+5) ฝั่งผู้ป่วยเป็น view-only ดูข้อมูลตัวเอง/Timeline/เอกสาร ไม่เห็นปุ่มกรอกข้อมูลแพทย์
+6) ฟอร์มแพทย์ เช่น ลงทะเบียนคนไข้ใหม่ และเพิ่มการรักษา เปลี่ยนเป็น vertical form เลื่อนลงแนวตั้ง ไม่เลื่อนซ้ายขวา
+7) ฟีเจอร์เดิมยังอยู่: AI Risk, ICU, PDF, Timeline, HN Search, Dashboard Stat Cards, Admin/Support, MySQL schema + seed
