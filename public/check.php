@@ -55,7 +55,7 @@ $tableStatus = [];
 function check_table_exists(PDO $pdo, string $table): bool
 {
     $stmt = $pdo->prepare(
-        'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name'
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = :table_name"
     );
     $stmt->execute(['table_name' => $table]);
     return (int) $stmt->fetchColumn() > 0;
@@ -68,7 +68,7 @@ function count_table_rows(PDO $pdo, string $table): ?int
     }
 
     try {
-        $stmt = $pdo->query('SELECT COUNT(*) FROM `' . $table . '`');
+        $stmt = $pdo->query('SELECT COUNT(*) FROM ' . $table);
         return (int) $stmt->fetchColumn();
     } catch (Throwable $e) {
         return null;
@@ -79,7 +79,7 @@ try {
     $pdo = db();
     if ($pdo instanceof PDO) {
         $dbConnected = true;
-        $currentDb = (string) $pdo->query('SELECT DATABASE()')->fetchColumn();
+        $currentDb = (string) $pdo->query('SELECT current_database()')->fetchColumn();
 
         foreach (array_merge($requiredTables, $optionalTables) as $table) {
             $exists = check_table_exists($pdo, $table);

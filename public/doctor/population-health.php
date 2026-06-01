@@ -107,7 +107,7 @@ function phm_task_for_patient(array $p): ?array
         return null;
     }
     return db_fetch_one(
-        'SELECT * FROM followup_tasks WHERE patient_id = :patient_id ORDER BY FIELD(status, "รอติดตาม", "โทรแล้ว", "นัดแล้ว", "Lab แล้ว", "ส่งต่อแล้ว", "ปิดเคสแล้ว"), due_date ASC, id DESC LIMIT 1',
+        "SELECT * FROM followup_tasks WHERE patient_id = :patient_id ORDER BY ARRAY_POSITION(ARRAY['รอติดตาม','โทรแล้ว','นัดแล้ว','Lab แล้ว','ส่งต่อแล้ว','ปิดเคสแล้ว'], status), due_date ASC, id DESC LIMIT 1",
         ['patient_id' => (int) $p['id']]
     );
 }

@@ -21,12 +21,13 @@ function doctor_register_pdo(): ?PDO
 function doctor_register_columns(PDO $pdo, string $table = 'patients'): array
 {
     try {
-        $stmt = $pdo->query('SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '`');
-        $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+        $stmt = $pdo->prepare("SELECT column_name FROM information_schema.columns WHERE table_name = :tbl ORDER BY ordinal_position");
+        $stmt->execute(['tbl' => $table]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $cols = [];
         foreach ($rows as $row) {
-            if (!empty($row['Field'])) {
-                $cols[] = (string) $row['Field'];
+            if (!empty($row['column_name'])) {
+                $cols[] = (string) $row['column_name'];
             }
         }
         return $cols;
@@ -53,7 +54,7 @@ function doctor_register_ensure_schema(PDO $pdo): void
 {
     // Create a safe patients table if schema.sql was not imported yet.
     doctor_register_exec_ignore($pdo, "CREATE TABLE IF NOT EXISTS patients (
-        id INT AUTO_INCREMENT PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         hn VARCHAR(50) NOT NULL,
         password VARCHAR(255) NOT NULL,
         full_name VARCHAR(255) NOT NULL,
@@ -71,7 +72,7 @@ function doctor_register_ensure_schema(PDO $pdo): void
         ward VARCHAR(255) DEFAULT NULL,
         department VARCHAR(255) DEFAULT NULL,
         surgery_status VARCHAR(255) DEFAULT NULL,
-        high_watch TINYINT(1) DEFAULT 0,
+        high_watch SMALLINT DEFAULT 0,
         blood_group VARCHAR(20) DEFAULT NULL,
         payment_method VARCHAR(100) DEFAULT NULL,
         insurance_detail VARCHAR(255) DEFAULT NULL,
@@ -80,48 +81,45 @@ function doctor_register_ensure_schema(PDO $pdo): void
         registration_source VARCHAR(80) DEFAULT 'staff',
         registration_status VARCHAR(80) DEFAULT 'active',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uniq_patients_hn (hn)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        updated_at TIMESTAMP DEFAULT NULL,
+        UNIQUE (hn)
+    )");
 
     $adds = [
-        'hn' => "ALTER TABLE patients ADD COLUMN hn VARCHAR(50) NOT NULL",
-        'password' => "ALTER TABLE patients ADD COLUMN password VARCHAR(255) NOT NULL DEFAULT '123456'",
-        'full_name' => "ALTER TABLE patients ADD COLUMN full_name VARCHAR(255) NOT NULL DEFAULT ''",
-        'gender' => "ALTER TABLE patients ADD COLUMN gender VARCHAR(30) DEFAULT NULL",
-        'age' => "ALTER TABLE patients ADD COLUMN age INT DEFAULT NULL",
-        'phone' => "ALTER TABLE patients ADD COLUMN phone VARCHAR(50) DEFAULT NULL",
-        'email' => "ALTER TABLE patients ADD COLUMN email VARCHAR(255) DEFAULT NULL",
-        'id_card' => "ALTER TABLE patients ADD COLUMN id_card VARCHAR(30) DEFAULT NULL",
-        'birth_date' => "ALTER TABLE patients ADD COLUMN birth_date DATE DEFAULT NULL",
-        'disease' => "ALTER TABLE patients ADD COLUMN disease VARCHAR(255) DEFAULT NULL",
-        'allergy_history' => "ALTER TABLE patients ADD COLUMN allergy_history TEXT DEFAULT NULL",
-        'address' => "ALTER TABLE patients ADD COLUMN address TEXT DEFAULT NULL",
-        'care_area' => "ALTER TABLE patients ADD COLUMN care_area VARCHAR(80) DEFAULT 'OPD'",
-        'hospital' => "ALTER TABLE patients ADD COLUMN hospital VARCHAR(255) DEFAULT NULL",
-        'ward' => "ALTER TABLE patients ADD COLUMN ward VARCHAR(255) DEFAULT NULL",
-        'department' => "ALTER TABLE patients ADD COLUMN department VARCHAR(255) DEFAULT NULL",
-        'surgery_status' => "ALTER TABLE patients ADD COLUMN surgery_status VARCHAR(255) DEFAULT NULL",
-        'high_watch' => "ALTER TABLE patients ADD COLUMN high_watch TINYINT(1) DEFAULT 0",
-        'blood_group' => "ALTER TABLE patients ADD COLUMN blood_group VARCHAR(20) DEFAULT NULL",
-        'payment_method' => "ALTER TABLE patients ADD COLUMN payment_method VARCHAR(100) DEFAULT NULL",
-        'insurance_detail' => "ALTER TABLE patients ADD COLUMN insurance_detail VARCHAR(255) DEFAULT NULL",
-        'risk_level' => "ALTER TABLE patients ADD COLUMN risk_level VARCHAR(50) DEFAULT 'Low'",
-        'risk_score' => "ALTER TABLE patients ADD COLUMN risk_score INT DEFAULT 0",
-        'registration_source' => "ALTER TABLE patients ADD COLUMN registration_source VARCHAR(80) DEFAULT 'staff'",
-        'registration_status' => "ALTER TABLE patients ADD COLUMN registration_status VARCHAR(80) DEFAULT 'active'",
-        'created_at' => "ALTER TABLE patients ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-        'updated_at' => "ALTER TABLE patients ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP",
+        'hn' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS hn VARCHAR(50) NOT NULL DEFAULT ''",
+        'password' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS password VARCHAR(255) NOT NULL DEFAULT '123456'",
+        'full_name' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS full_name VARCHAR(255) NOT NULL DEFAULT ''",
+        'gender' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS gender VARCHAR(30) DEFAULT NULL",
+        'age' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS age INT DEFAULT NULL",
+        'phone' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS phone VARCHAR(50) DEFAULT NULL",
+        'email' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS email VARCHAR(255) DEFAULT NULL",
+        'id_card' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS id_card VARCHAR(30) DEFAULT NULL",
+        'birth_date' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS birth_date DATE DEFAULT NULL",
+        'disease' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS disease VARCHAR(255) DEFAULT NULL",
+        'allergy_history' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS allergy_history TEXT DEFAULT NULL",
+        'address' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS address TEXT DEFAULT NULL",
+        'care_area' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS care_area VARCHAR(80) DEFAULT 'OPD'",
+        'hospital' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS hospital VARCHAR(255) DEFAULT NULL",
+        'ward' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS ward VARCHAR(255) DEFAULT NULL",
+        'department' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS department VARCHAR(255) DEFAULT NULL",
+        'surgery_status' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS surgery_status VARCHAR(255) DEFAULT NULL",
+        'high_watch' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS high_watch SMALLINT DEFAULT 0",
+        'blood_group' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS blood_group VARCHAR(20) DEFAULT NULL",
+        'payment_method' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS payment_method VARCHAR(100) DEFAULT NULL",
+        'insurance_detail' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS insurance_detail VARCHAR(255) DEFAULT NULL",
+        'risk_level' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS risk_level VARCHAR(50) DEFAULT 'Low'",
+        'risk_score' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS risk_score INT DEFAULT 0",
+        'registration_source' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS registration_source VARCHAR(80) DEFAULT 'staff'",
+        'registration_status' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS registration_status VARCHAR(80) DEFAULT 'active'",
+        'created_at' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+        'updated_at' => "ALTER TABLE patients ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NULL",
     ];
 
-    $columns = doctor_register_columns($pdo);
     foreach ($adds as $column => $sql) {
-        if (!in_array($column, $columns, true)) {
-            doctor_register_exec_ignore($pdo, $sql);
-        }
+        doctor_register_exec_ignore($pdo, $sql);
     }
 
-    doctor_register_exec_ignore($pdo, 'ALTER TABLE patients ADD UNIQUE KEY uniq_patients_hn (hn)');
+    doctor_register_exec_ignore($pdo, 'CREATE UNIQUE INDEX IF NOT EXISTS uniq_patients_hn ON patients (hn)');
 
     if (function_exists('usemed_ensure_extended_schema')) {
         try {
@@ -187,9 +185,8 @@ function doctor_register_insert(PDO $pdo, array $data, string &$error = ''): boo
     }
 
     $names = array_keys($filtered);
-    $quoted = array_map(static fn($name) => '`' . str_replace('`', '', (string) $name) . '`', $names);
     $params = array_map(static fn($name) => ':' . $name, $names);
-    $sql = 'INSERT INTO patients (' . implode(',', $quoted) . ') VALUES (' . implode(',', $params) . ')';
+    $sql = 'INSERT INTO patients (' . implode(',', $names) . ') VALUES (' . implode(',', $params) . ')';
 
     try {
         $stmt = $pdo->prepare($sql);

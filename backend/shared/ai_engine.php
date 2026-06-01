@@ -121,13 +121,19 @@ function ai_demo_result(): array
 
 function usemed_ai_ensure_population_schema(): void
 {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
     if (!db_is_connected()) {
         return;
     }
 
     db_execute("CREATE TABLE IF NOT EXISTS ai_population_scores (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         model_version VARCHAR(80) DEFAULT 'rule-v1',
         risk_score INT NOT NULL DEFAULT 0,
@@ -136,20 +142,19 @@ function usemed_ai_ensure_population_schema(): void
         recommended_sla VARCHAR(120) DEFAULT NULL,
         trajectory_status VARCHAR(120) DEFAULT NULL,
         cohort_tags TEXT DEFAULT NULL,
-        feature_snapshot LONGTEXT DEFAULT NULL,
+        feature_snapshot TEXT DEFAULT NULL,
         recommendation_summary TEXT DEFAULT NULL,
         calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_ai_population_patient (patient_id),
-        INDEX idx_ai_population_priority (priority_level),
-        INDEX idx_ai_population_hn (hn),
-        CONSTRAINT fk_ai_population_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        updated_at TIMESTAMP DEFAULT NULL,
+        UNIQUE (patient_id)
+    )");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_ai_population_priority ON ai_population_scores (priority_level)");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_ai_population_hn ON ai_population_scores (hn)");
 
     db_execute("CREATE TABLE IF NOT EXISTS ai_population_reasons (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        score_id INT DEFAULT NULL,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        score_id INT DEFAULT NULL REFERENCES ai_population_scores(id) ON DELETE CASCADE,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         reason_type VARCHAR(80) DEFAULT NULL,
         reason_text TEXT NOT NULL,
@@ -157,15 +162,13 @@ function usemed_ai_ensure_population_schema(): void
         source_value VARCHAR(255) DEFAULT NULL,
         source_table VARCHAR(120) DEFAULT NULL,
         contribution INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_ai_reason_patient (patient_id),
-        CONSTRAINT fk_ai_reason_score FOREIGN KEY (score_id) REFERENCES ai_population_scores(id) ON DELETE CASCADE,
-        CONSTRAINT fk_ai_reason_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_ai_reason_patient ON ai_population_reasons (patient_id)");
 
     db_execute("CREATE TABLE IF NOT EXISTS followup_tasks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         priority_level VARCHAR(20) DEFAULT NULL,
         task_type VARCHAR(120) DEFAULT NULL,
@@ -176,11 +179,10 @@ function usemed_ai_ensure_population_schema(): void
         status VARCHAR(80) DEFAULT 'รอติดตาม',
         source VARCHAR(80) DEFAULT 'AI Population',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_followup_patient (patient_id),
-        INDEX idx_followup_status (status),
-        CONSTRAINT fk_followup_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        updated_at TIMESTAMP DEFAULT NULL
+    )");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_followup_patient ON followup_tasks (patient_id)");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_followup_status ON followup_tasks (status)");
 }
 
 function usemed_ai_float($value): ?float
@@ -450,7 +452,8 @@ function usemed_ai_call_ml_service(array $patient, array $features): ?array
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Prevent UI hanging if ML service is down
+    curl_setopt($ch, CURLOPT_TIMEOUT, 1); // Prevent UI hanging if ML service is down
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0); // Fail fast if service unreachable
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -694,10 +697,10 @@ function usemed_ai_persist_population_score(array $patient, array $result): void
             (patient_id, hn, model_version, risk_score, priority_level, priority_label, recommended_sla, trajectory_status, cohort_tags, feature_snapshot, recommendation_summary, calculated_at)
          VALUES
             (:patient_id, :hn, :model_version, :risk_score, :priority_level, :priority_label, :recommended_sla, :trajectory_status, :cohort_tags, :feature_snapshot, :recommendation_summary, CURRENT_TIMESTAMP)
-         ON DUPLICATE KEY UPDATE
-            hn = VALUES(hn), model_version = VALUES(model_version), risk_score = VALUES(risk_score), priority_level = VALUES(priority_level),
-            priority_label = VALUES(priority_label), recommended_sla = VALUES(recommended_sla), trajectory_status = VALUES(trajectory_status),
-            cohort_tags = VALUES(cohort_tags), feature_snapshot = VALUES(feature_snapshot), recommendation_summary = VALUES(recommendation_summary),
+         ON CONFLICT (patient_id) DO UPDATE SET
+            hn = EXCLUDED.hn, model_version = EXCLUDED.model_version, risk_score = EXCLUDED.risk_score, priority_level = EXCLUDED.priority_level,
+            priority_label = EXCLUDED.priority_label, recommended_sla = EXCLUDED.recommended_sla, trajectory_status = EXCLUDED.trajectory_status,
+            cohort_tags = EXCLUDED.cohort_tags, feature_snapshot = EXCLUDED.feature_snapshot, recommendation_summary = EXCLUDED.recommendation_summary,
             calculated_at = CURRENT_TIMESTAMP',
         $params
     );

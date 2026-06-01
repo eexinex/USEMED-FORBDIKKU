@@ -727,17 +727,27 @@ function usemed_visit_field(array $visit, string $key, string $default = '-'): s
 
 function usemed_table_columns(string $table): array
 {
+    static $cache = [];
+
+    if (isset($cache[$table])) {
+        return $cache[$table];
+    }
+
     if (!db_is_connected()) {
         return [];
     }
 
-    $rows = db_fetch_all('SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '`');
+    $rows = db_fetch_all(
+        "SELECT column_name FROM information_schema.columns WHERE table_name = :tbl ORDER BY ordinal_position",
+        ['tbl' => $table]
+    );
     $columns = [];
     foreach ($rows as $row) {
-        if (!empty($row['Field'])) {
-            $columns[] = (string) $row['Field'];
+        if (!empty($row['column_name'])) {
+            $columns[] = (string) $row['column_name'];
         }
     }
+    $cache[$table] = $columns;
     return $columns;
 }
 
@@ -760,58 +770,72 @@ function usemed_insert_available(string $table, array $data): bool
     }
 
     $names = array_keys($filtered);
-    $sql = 'INSERT INTO `' . str_replace('`', '', $table) . '` (`' . implode('`,`', $names) . '`) VALUES (:' . implode(',:', $names) . ')';
+    $sql = 'INSERT INTO ' . $table . ' (' . implode(',', $names) . ') VALUES (:' . implode(',:', $names) . ')';
     return db_execute($sql, $filtered);
 }
 
 function usemed_ensure_extended_schema(): void
 {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
     if (!db_is_connected()) {
         return;
     }
 
-    db_execute("ALTER TABLE patients ADD COLUMN care_area VARCHAR(80) DEFAULT 'OPD'");
-    db_execute("ALTER TABLE patients ADD COLUMN hospital VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN ward VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN surgery_status VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN high_watch TINYINT(1) DEFAULT 0");
-    db_execute("ALTER TABLE patients ADD COLUMN blood_group VARCHAR(20) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN payment_method VARCHAR(100) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN insurance_detail VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN department VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN risk_level VARCHAR(50) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN risk_score INT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN admission_date DATE DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN expected_discharge_date VARCHAR(50) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN discharge_date DATE DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN additional_medication TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN operation_name VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN operation_date DATE DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN operation_status VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN operation_size VARCHAR(100) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN icu_day VARCHAR(80) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN icu_daily_note TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN ventilator_status VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN vasopressor_status VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN fluid_balance VARCHAR(100) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN line_tube_status VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN followup_plan TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN discharge_plan TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN daily_note TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN monitoring_frequency VARCHAR(120) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN escalation_plan TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN last_round_date DATETIME DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN email VARCHAR(255) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN id_card VARCHAR(30) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN birth_date DATE DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN allergy_history TEXT DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN registration_source VARCHAR(80) DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN registration_status VARCHAR(80) DEFAULT 'active'");
-    db_execute("ALTER TABLE patients ADD COLUMN consent_accepted_at DATETIME DEFAULT NULL");
-    db_execute("ALTER TABLE patients ADD COLUMN updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP");
+    // --- patients columns (PostgreSQL: ADD COLUMN IF NOT EXISTS) ---
+    $patientCols = [
+        "care_area VARCHAR(80) DEFAULT 'OPD'",
+        "hospital VARCHAR(255) DEFAULT NULL",
+        "ward VARCHAR(255) DEFAULT NULL",
+        "surgery_status VARCHAR(255) DEFAULT NULL",
+        "high_watch SMALLINT DEFAULT 0",
+        "blood_group VARCHAR(20) DEFAULT NULL",
+        "payment_method VARCHAR(100) DEFAULT NULL",
+        "insurance_detail VARCHAR(255) DEFAULT NULL",
+        "department VARCHAR(255) DEFAULT NULL",
+        "risk_level VARCHAR(50) DEFAULT NULL",
+        "risk_score INT DEFAULT NULL",
+        "admission_date DATE DEFAULT NULL",
+        "expected_discharge_date VARCHAR(50) DEFAULT NULL",
+        "discharge_date DATE DEFAULT NULL",
+        "additional_medication TEXT DEFAULT NULL",
+        "operation_name VARCHAR(255) DEFAULT NULL",
+        "operation_date DATE DEFAULT NULL",
+        "operation_status VARCHAR(255) DEFAULT NULL",
+        "operation_size VARCHAR(100) DEFAULT NULL",
+        "icu_day VARCHAR(80) DEFAULT NULL",
+        "icu_daily_note TEXT DEFAULT NULL",
+        "ventilator_status VARCHAR(255) DEFAULT NULL",
+        "vasopressor_status VARCHAR(255) DEFAULT NULL",
+        "fluid_balance VARCHAR(100) DEFAULT NULL",
+        "line_tube_status VARCHAR(255) DEFAULT NULL",
+        "followup_plan TEXT DEFAULT NULL",
+        "discharge_plan TEXT DEFAULT NULL",
+        "daily_note TEXT DEFAULT NULL",
+        "monitoring_frequency VARCHAR(120) DEFAULT NULL",
+        "escalation_plan TEXT DEFAULT NULL",
+        "last_round_date TIMESTAMP DEFAULT NULL",
+        "email VARCHAR(255) DEFAULT NULL",
+        "id_card VARCHAR(30) DEFAULT NULL",
+        "birth_date DATE DEFAULT NULL",
+        "allergy_history TEXT DEFAULT NULL",
+        "registration_source VARCHAR(80) DEFAULT NULL",
+        "registration_status VARCHAR(80) DEFAULT 'active'",
+        "consent_accepted_at TIMESTAMP DEFAULT NULL",
+        "updated_at TIMESTAMP DEFAULT NULL",
+    ];
 
-    db_execute("ALTER TABLE doctors ADD COLUMN hospital VARCHAR(255) DEFAULT NULL");
+    foreach ($patientCols as $def) {
+        db_execute("ALTER TABLE patients ADD COLUMN IF NOT EXISTS {$def}");
+    }
 
+    db_execute("ALTER TABLE doctors ADD COLUMN IF NOT EXISTS hospital VARCHAR(255) DEFAULT NULL");
+
+    // --- visits columns ---
     $visitColumns = [
         "visit_type VARCHAR(80) DEFAULT NULL",
         "visit_reason TEXT DEFAULT NULL",
@@ -877,21 +901,22 @@ function usemed_ensure_extended_schema(): void
         "admission_ward VARCHAR(255) DEFAULT NULL",
         "triage_level VARCHAR(80) DEFAULT NULL",
         "red_flags TEXT DEFAULT NULL",
-        "consent_status VARCHAR(120) DEFAULT NULL"
+        "consent_status VARCHAR(120) DEFAULT NULL",
     ];
 
     foreach ($visitColumns as $definition) {
-        $name = trim(strtok($definition, ' '));
-        db_execute("ALTER TABLE visits ADD COLUMN {$definition}");
+        db_execute("ALTER TABLE visits ADD COLUMN IF NOT EXISTS {$definition}");
     }
 
-    db_execute("ALTER TABLE support_tickets ADD COLUMN problem_type VARCHAR(100) DEFAULT NULL");
-    db_execute("ALTER TABLE support_tickets ADD COLUMN menu_path VARCHAR(255) DEFAULT NULL");
+    db_execute("ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS problem_type VARCHAR(100) DEFAULT NULL");
+    db_execute("ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS menu_path VARCHAR(255) DEFAULT NULL");
+
+    // --- CREATE TABLE IF NOT EXISTS (PostgreSQL syntax: SERIAL, no ENGINE) ---
 
     db_execute("CREATE TABLE IF NOT EXISTS referrals (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
-        doctor_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
+        doctor_id INT DEFAULT NULL REFERENCES doctors(id) ON DELETE SET NULL,
         from_department VARCHAR(255) DEFAULT NULL,
         to_department VARCHAR(255) NOT NULL,
         to_doctor VARCHAR(255) DEFAULT NULL,
@@ -899,14 +924,12 @@ function usemed_ensure_extended_schema(): void
         urgency VARCHAR(50) DEFAULT 'ปกติ',
         reason TEXT NOT NULL,
         status VARCHAR(80) DEFAULT 'รอรับเคส',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_referrals_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
-        CONSTRAINT fk_referrals_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
 
     db_execute("CREATE TABLE IF NOT EXISTS patient_self_assessments (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         systolic INT DEFAULT NULL,
         diastolic INT DEFAULT NULL,
@@ -920,29 +943,25 @@ function usemed_ensure_extended_schema(): void
         risk_score INT DEFAULT NULL,
         risk_level VARCHAR(50) DEFAULT NULL,
         advice TEXT DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_self_assessment_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
 
     db_execute("CREATE TABLE IF NOT EXISTS prescriptions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
-        doctor_id INT DEFAULT NULL,
-        visit_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
+        doctor_id INT DEFAULT NULL REFERENCES doctors(id) ON DELETE SET NULL,
+        visit_id INT DEFAULT NULL REFERENCES visits(id) ON DELETE SET NULL,
         rx_no VARCHAR(80) DEFAULT NULL,
         diagnosis TEXT DEFAULT NULL,
         payment_method VARCHAR(100) DEFAULT NULL,
         note TEXT DEFAULT NULL,
         status VARCHAR(80) DEFAULT 'จ่ายยาแล้ว',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
-        CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL,
-        CONSTRAINT fk_prescriptions_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
 
     db_execute("CREATE TABLE IF NOT EXISTS prescription_items (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        prescription_id INT NOT NULL,
+        id SERIAL PRIMARY KEY,
+        prescription_id INT NOT NULL REFERENCES prescriptions(id) ON DELETE CASCADE,
         medication_name VARCHAR(255) NOT NULL,
         strength VARCHAR(100) DEFAULT NULL,
         dose VARCHAR(255) DEFAULT NULL,
@@ -950,17 +969,16 @@ function usemed_ensure_extended_schema(): void
         frequency VARCHAR(255) DEFAULT NULL,
         duration VARCHAR(120) DEFAULT NULL,
         quantity VARCHAR(80) DEFAULT NULL,
-        instruction TEXT DEFAULT NULL,
-        CONSTRAINT fk_prescription_items_rx FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        instruction TEXT DEFAULT NULL
+    )");
 
     db_execute("CREATE TABLE IF NOT EXISTS ems_cases (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
-        doctor_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
+        doctor_id INT DEFAULT NULL REFERENCES doctors(id) ON DELETE SET NULL,
         case_type VARCHAR(80) DEFAULT 'medical',
         ems_unit VARCHAR(255) DEFAULT NULL,
-        arrival_time DATETIME DEFAULT NULL,
+        arrival_time TIMESTAMP DEFAULT NULL,
         chief_complaint TEXT DEFAULT NULL,
         mechanism TEXT DEFAULT NULL,
         injuries TEXT DEFAULT NULL,
@@ -980,14 +998,12 @@ function usemed_ensure_extended_schema(): void
         gcs VARCHAR(20) DEFAULT NULL,
         progress_note TEXT DEFAULT NULL,
         status VARCHAR(80) DEFAULT 'รับเคสใหม่',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_ems_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
-        CONSTRAINT fk_ems_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
 
     db_execute("CREATE TABLE IF NOT EXISTS ai_population_scores (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         model_version VARCHAR(80) DEFAULT 'rule-v1',
         risk_score INT NOT NULL DEFAULT 0,
@@ -996,20 +1012,19 @@ function usemed_ensure_extended_schema(): void
         recommended_sla VARCHAR(120) DEFAULT NULL,
         trajectory_status VARCHAR(120) DEFAULT NULL,
         cohort_tags TEXT DEFAULT NULL,
-        feature_snapshot LONGTEXT DEFAULT NULL,
+        feature_snapshot TEXT DEFAULT NULL,
         recommendation_summary TEXT DEFAULT NULL,
         calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_ai_population_patient (patient_id),
-        INDEX idx_ai_population_priority (priority_level),
-        INDEX idx_ai_population_hn (hn),
-        CONSTRAINT fk_ai_population_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        updated_at TIMESTAMP DEFAULT NULL,
+        UNIQUE (patient_id)
+    )");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_ai_population_priority ON ai_population_scores (priority_level)");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_ai_population_hn ON ai_population_scores (hn)");
 
     db_execute("CREATE TABLE IF NOT EXISTS ai_population_reasons (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        score_id INT DEFAULT NULL,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        score_id INT DEFAULT NULL REFERENCES ai_population_scores(id) ON DELETE CASCADE,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         reason_type VARCHAR(80) DEFAULT NULL,
         reason_text TEXT NOT NULL,
@@ -1017,15 +1032,13 @@ function usemed_ensure_extended_schema(): void
         source_value VARCHAR(255) DEFAULT NULL,
         source_table VARCHAR(120) DEFAULT NULL,
         contribution INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_ai_reason_patient (patient_id),
-        CONSTRAINT fk_ai_reason_score FOREIGN KEY (score_id) REFERENCES ai_population_scores(id) ON DELETE CASCADE,
-        CONSTRAINT fk_ai_reason_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_ai_reason_patient ON ai_population_reasons (patient_id)");
 
     db_execute("CREATE TABLE IF NOT EXISTS followup_tasks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        patient_id INT DEFAULT NULL,
+        id SERIAL PRIMARY KEY,
+        patient_id INT DEFAULT NULL REFERENCES patients(id) ON DELETE SET NULL,
         hn VARCHAR(50) DEFAULT NULL,
         priority_level VARCHAR(20) DEFAULT NULL,
         task_type VARCHAR(120) DEFAULT NULL,
@@ -1036,20 +1049,27 @@ function usemed_ensure_extended_schema(): void
         status VARCHAR(80) DEFAULT 'รอติดตาม',
         source VARCHAR(80) DEFAULT 'AI Population',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_followup_patient (patient_id),
-        INDEX idx_followup_status (status),
-        CONSTRAINT fk_followup_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        updated_at TIMESTAMP DEFAULT NULL
+    )");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_followup_patient ON followup_tasks (patient_id)");
+    db_execute("CREATE INDEX IF NOT EXISTS idx_followup_status ON followup_tasks (status)");
 }
 
 function usemed_seed_demo_data(): void
 {
+    static $done = false;
+    if ($done) {
+        return;
+    }
+    $done = true;
+
     if (!db_is_connected()) {
         return;
     }
 
     usemed_ensure_extended_schema();
+
+    $columns = usemed_table_columns('patients');
 
     foreach (demo_patients() as $p) {
         $details = usemed_patient_followup_details($p);
@@ -1092,7 +1112,6 @@ function usemed_seed_demo_data(): void
             'last_round_date' => str_replace(' ', ' ', (string) ($details['last_round_date'] ?? '')) ?: null,
         ];
 
-        $columns = usemed_table_columns('patients');
         $filtered = [];
         foreach ($patientData as $key => $value) {
             if (in_array($key, $columns, true)) {
@@ -1104,10 +1123,10 @@ function usemed_seed_demo_data(): void
             $updateParts = [];
             foreach ($names as $name) {
                 if ($name !== 'hn') {
-                    $updateParts[] = '`' . $name . '` = VALUES(`' . $name . '`)';
+                    $updateParts[] = $name . ' = EXCLUDED.' . $name;
                 }
             }
-            $sql = 'INSERT INTO patients (`' . implode('`,`', $names) . '`) VALUES (:' . implode(',:', $names) . ') ON DUPLICATE KEY UPDATE ' . implode(', ', $updateParts);
+            $sql = 'INSERT INTO patients (' . implode(',', $names) . ') VALUES (:' . implode(',:', $names) . ') ON CONFLICT (hn) DO UPDATE SET ' . implode(', ', $updateParts);
             db_execute($sql, $filtered);
         }
     }
@@ -1116,9 +1135,9 @@ function usemed_seed_demo_data(): void
         db_execute(
             'INSERT INTO doctors (username, password, full_name, license_no, department, hospital)
              VALUES (:username, :password, :full_name, :license_no, :department, :hospital)
-             ON DUPLICATE KEY UPDATE
-                password = VALUES(password), full_name = VALUES(full_name), license_no = VALUES(license_no),
-                department = VALUES(department), hospital = VALUES(hospital)',
+             ON CONFLICT (username) DO UPDATE SET
+                password = EXCLUDED.password, full_name = EXCLUDED.full_name, license_no = EXCLUDED.license_no,
+                department = EXCLUDED.department, hospital = EXCLUDED.hospital',
             [
                 'username' => $d['username'],
                 'password' => $d['password'] ?? '123456',
