@@ -29,7 +29,7 @@ function db(): ?PDO
         }
 
         $dsn = sprintf(
-            'pgsql:host=%s;port=%s;dbname=%s',
+            'pgsql:host=%s;port=%s;dbname=%s;connect_timeout=3',
             $host,
             $port,
             DB_NAME
@@ -39,8 +39,8 @@ function db(): ?PDO
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_PERSISTENT => true, // Use persistent connections for speed
-            PDO::ATTR_TIMEOUT => 5, // 5 seconds timeout to prevent hanging
+            PDO::ATTR_PERSISTENT => true,
+            PDO::ATTR_TIMEOUT => 3,
         ]);
 
         return $pdo;
