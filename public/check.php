@@ -9,6 +9,7 @@ ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../backend/shared/layout.php';
+usemed_ensure_extended_schema();
 
 $root = dirname(__DIR__);
 
@@ -37,6 +38,13 @@ $optionalTables = [
     'treatments',
     'referrals',
     'ai_risk_logs',
+    'patient_self_assessments',
+    'prescriptions',
+    'prescription_items',
+    'ems_cases',
+    'ai_population_scores',
+    'ai_population_reasons',
+    'followup_tasks',
 ];
 
 $dbConnected = false;

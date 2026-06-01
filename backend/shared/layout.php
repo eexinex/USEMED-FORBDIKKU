@@ -17,7 +17,7 @@ function page_start(string $title = 'USE MED', string $role = 'guest', string $a
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?> | USE MED</title>
-    <link rel="stylesheet" href="<?= e(app_url('assets/usemed.css')) ?>?v=step7-care-followup-lists">
+    <link rel="stylesheet" href="<?= e(app_url('assets/usemed.css')) ?>?v=step23-force-small-hero-20260601">
 </head>
 <body class="role-<?= e($role) ?> active-<?= e($active) ?>">
 <div class="<?= $role === 'guest' ? 'guest-shell' : 'app-shell' ?>">
@@ -39,7 +39,7 @@ function page_end(): void
     ?>
     </main>
 </div>
-<script src="<?= e(app_url('assets/app.js')) ?>?v=step7-care-followup-lists" defer></script>
+<script src="<?= e(app_url('assets/app.js')) ?>?v=step23-force-small-hero-20260601" defer></script>
 </body>
 </html>
     <?php
@@ -49,128 +49,114 @@ function render_sidebar(string $role, string $active = ''): string
 {
     $user = current_user();
     $name = $user['name'] ?? 'User';
+    $portal = $role === 'doctor' ? 'Doctor Portal' : ($role === 'patient' ? 'Patient Portal' : 'Admin Portal');
+    $status = $role === 'doctor' ? 'ออนไลน์' : ($role === 'patient' ? (($user['hn'] ?? '') ?: 'ผู้ป่วย') : 'ผู้ดูแลระบบ');
 
     ob_start();
     ?>
-    <aside class="sidebar">
-        <a class="brand-block" href="<?= e(app_url('index.php')) ?>">
-            <div class="brand-logo">UM</div>
+    <aside class="sidebar ux-sidebar sidebar-<?= e($role) ?>">
+        <a class="brand-block ux-brand" href="<?= e(app_url('index.php')) ?>">
+            <div class="brand-logo ux-brand-logo">UM</div>
             <div>
                 <strong>USE MED</strong>
-                <span><?= e(ucfirst($role)) ?> Portal</span>
+                <span><?= e($portal) ?></span>
             </div>
         </a>
 
-        <div class="user-card">
-            <div class="user-avatar"><?= e(initials($name)) ?></div>
-            <div>
+        <div class="user-card ux-user-card">
+            <div class="user-avatar ux-user-avatar"><?= e(initials($name)) ?></div>
+            <div class="ux-user-meta">
                 <strong><?= e($name) ?></strong>
-                <span><?= e($role) ?></span>
+                <span><?= e($status) ?></span>
             </div>
         </div>
 
-        <nav class="side-nav">
+        <nav class="side-nav ux-side-nav" aria-label="เมนูหลัก">
             <?php foreach (nav_items($role) as $key => $item): ?>
                 <a class="<?= e(active_class($active, $key)) ?>" href="<?= e(app_url($item['href'])) ?>">
-                    <span><?= e($item['icon']) ?></span>
-                    <?= e($item['label']) ?>
+                    <span class="ux-nav-icon" aria-hidden="true"><?= icon_svg($item['icon'] ?? $key) ?></span>
+                    <b><?= e($item['label']) ?></b>
                 </a>
             <?php endforeach; ?>
         </nav>
 
-        <a class="logout-link" href="<?= e(app_url($role . '/logout.php')) ?>">
-            ออกจากระบบ
-        </a>
+        <div class="ux-sidebar-footer">
+            <a class="ux-help-card" href="<?= e(app_url('support.php')) ?>">
+                <span class="ux-help-icon"><?= icon_svg('headset') ?></span>
+                <strong>ต้องการความช่วยเหลือ?</strong>
+                <small>ติดต่อเจ้าหน้าที่<br>08:00 – 20:00 น.</small>
+            </a>
+
+            <a class="logout-link ux-logout" href="<?= e(app_url($role . '/logout.php')) ?>">
+                <span><?= icon_svg('logout') ?></span>
+                ออกจากระบบ
+            </a>
+        </div>
     </aside>
     <?php
 
     return ob_get_clean();
 }
 
+function icon_svg(string $name): string
+{
+    $icons = [
+        'home' => '<svg viewBox="0 0 24 24"><path d="M3 10.8 12 3l9 7.8v9.7a1.5 1.5 0 0 1-1.5 1.5H15v-6H9v6H4.5A1.5 1.5 0 0 1 3 20.5v-9.7Z"/></svg>',
+        'assessment' => '<svg viewBox="0 0 24 24"><path d="M4 19h16v2H4v-2Zm2-4 3-3 3 2 5-7 2 1.4-6.2 8.7-3.4-2.3L7.4 17 6 15Z"/><path d="M5 4h3v9H5V4Zm6 2h3v7h-3V6Zm6-3h3v10h-3V3Z" opacity=".55"/></svg>',
+        'calendar' => '<svg viewBox="0 0 24 24"><path d="M7 2h2v3h6V2h2v3h2.5A2.5 2.5 0 0 1 22 7.5v12A2.5 2.5 0 0 1 19.5 22h-15A2.5 2.5 0 0 1 2 19.5v-12A2.5 2.5 0 0 1 4.5 5H7V2Zm13 8H4v9.5c0 .3.2.5.5.5h15c.3 0 .5-.2.5-.5V10Z"/></svg>',
+        'doc' => '<svg viewBox="0 0 24 24"><path d="M6 2h8l5 5v13.5A1.5 1.5 0 0 1 17.5 22h-11A1.5 1.5 0 0 1 5 20.5v-17A1.5 1.5 0 0 1 6.5 2H6Zm7 1.8V8h4.2L13 3.8ZM8 12h8v2H8v-2Zm0 4h8v2H8v-2Z"/></svg>',
+        'message' => '<svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-5 3v-3.5A2.5 2.5 0 0 1 2 16.5V7a2 2 0 0 1 2-2Zm1.5 3 6.5 4.5L18.5 8h-13Z"/></svg>',
+        'help' => '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 16.5a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6Zm1.1-4.4h-2v-.8c0-1.1.6-1.8 1.6-2.4.9-.6 1.4-1 1.4-1.8 0-.9-.7-1.5-1.8-1.5-1 0-1.8.5-2.4 1.3L8.5 7.7A4.4 4.4 0 0 1 12.4 6c2.3 0 3.9 1.3 3.9 3.1 0 1.6-.9 2.4-2.1 3.1-.8.5-1.1.8-1.1 1.5v.4Z"/></svg>',
+        'dashboard' => '<svg viewBox="0 0 24 24"><path d="M3 4h8v7H3V4Zm10 0h8v7h-8V4ZM3 13h8v7H3v-7Zm10 0h8v7h-8v-7Z"/></svg>',
+        'patient' => '<svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0H5Z"/></svg>',
+        'plus' => '<svg viewBox="0 0 24 24"><path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7V4Z"/></svg>',
+        'spark' => '<svg viewBox="0 0 24 24"><path d="m12 2 2.3 6.4L21 11l-6.7 2.6L12 20l-2.3-6.4L3 11l6.7-2.6L12 2Z"/><path d="m19 3 .9 2.5L22 6.5l-2.1 1-.9 2.5-.9-2.5-2.1-1 2.1-1L19 3Z" opacity=".6"/></svg>',
+        'ambulance' => '<svg viewBox="0 0 24 24"><path d="M3 7h10v10H3V7Zm10 3h4l4 4v3h-2.2a2.8 2.8 0 0 0-5.6 0H10.8a2.8 2.8 0 0 0-5.6 0H3v-2h10v-5Zm2 1.5V14h3.5L16 11.5H15ZM8 18.5A1.5 1.5 0 1 1 8 15a1.5 1.5 0 0 1 0 3.5Zm8 0a1.5 1.5 0 1 1 0-3.5 1.5 1.5 0 0 1 0 3.5ZM7 9h2v2h2v2H9v2H7v-2H5v-2h2V9Z"/></svg>',
+        'rx' => '<svg viewBox="0 0 24 24"><path d="M5 3h8a4 4 0 0 1 1.2 7.8l4.8 7.2h-2.7l-4.5-7H8v7H5V3Zm3 2.5v3h4.7a1.5 1.5 0 0 0 0-3H8Zm9 7.5 1.7 1.7L21 12.4l1.4 1.4-2.3 2.3 2.3 2.3-1.4 1.4-2.3-2.3-2.3 2.3-1.4-1.4 2.3-2.3-2.3-2.3L17 13Z"/></svg>',
+        'note' => '<svg viewBox="0 0 24 24"><path d="M5 3h14v18H5V3Zm3 4h8v2H8V7Zm0 4h8v2H8v-2Zm0 4h6v2H8v-2Z"/></svg>',
+        'transfer' => '<svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3 1.4-1.4L22 8l-5.6 5.4L15 12l3-3H7V7ZM17 17H6l3 3-1.4 1.4L2 16l5.6-5.4L9 12l-3 3h11v2Z"/></svg>',
+        'icu' => '<svg viewBox="0 0 24 24"><path d="M2 13h4l2-6 4 12 3-8 2 4h5v2h-6.2l-.6-1.3L12 22 8 11l-.6 2H2v-2Z"/></svg>',
+        'users' => '<svg viewBox="0 0 24 24"><path d="M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm8-1a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 21a6 6 0 0 1 12 0H2Zm12.5 0a7.5 7.5 0 0 0-2.2-4.9A5.5 5.5 0 0 1 22 21h-7.5Z"/></svg>',
+        'settings' => '<svg viewBox="0 0 24 24"><path d="M19.4 13.5c.1-.5.1-1 .1-1.5s0-1-.1-1.5l2-1.5-2-3.5-2.4 1a7 7 0 0 0-2.6-1.5L14 2h-4l-.4 2.5A7 7 0 0 0 7 6L4.6 5 2.6 8.5l2 1.5c-.1.5-.1 1-.1 1.5s0 1 .1 1.5l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 2.6 1.5L10 22h4l.4-2.5A7 7 0 0 0 17 18l2.4 1 2-3.5-2-1.5ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z"/></svg>',
+        'headset' => '<svg viewBox="0 0 24 24"><path d="M12 3a8 8 0 0 0-8 8v5a3 3 0 0 0 3 3h2v-7H6v-1a6 6 0 0 1 12 0v1h-3v7h2.5A3.5 3.5 0 0 1 14 22h-3v-2h3a1.5 1.5 0 0 0 1.4-1H18a3 3 0 0 0 3-3v-5a8 8 0 0 0-9-8Z"/></svg>',
+        'logout' => '<svg viewBox="0 0 24 24"><path d="M11 3h2v10h-2V3Zm-4.8 3.8 1.4 1.4A6 6 0 1 0 16.4 8l1.4-1.4A8 8 0 1 1 6.2 6.8Z"/></svg>',
+    ];
+
+    return $icons[$name] ?? $icons['home'];
+}
+
 function nav_items(string $role): array
 {
     if ($role === 'patient') {
         return [
-            'portal' => [
-                'label' => 'หน้าหลัก',
-                'href' => 'patient/portal.php',
-                'icon' => '🏠',
-            ],
-            'timeline' => [
-                'label' => 'Timeline',
-                'href' => 'patient/timeline.php',
-                'icon' => '🕒',
-            ],
-            'documents' => [
-                'label' => 'เอกสาร',
-                'href' => 'patient/documents.php',
-                'icon' => '📄',
-            ],
-            'support' => [
-                'label' => 'แจ้งปัญหา',
-                'href' => 'support.php',
-                'icon' => '🛟',
-            ],
+            'portal' => ['label' => 'หน้าหลัก', 'href' => 'patient/portal.php', 'icon' => 'home'],
+            'self_assessment' => ['label' => 'ประเมินสุขภาพ', 'href' => 'patient/self-assessment.php', 'icon' => 'assessment'],
+            'timeline' => ['label' => 'นัดหมายของฉัน', 'href' => 'patient/timeline.php', 'icon' => 'calendar'],
+            'documents' => ['label' => 'ผลตรวจ / เอกสาร', 'href' => 'patient/documents.php', 'icon' => 'doc'],
+            'support' => ['label' => 'ความช่วยเหลือ', 'href' => 'support.php', 'icon' => 'help'],
         ];
     }
 
     if ($role === 'doctor') {
         return [
-            'dashboard' => [
-                'label' => 'Dashboard',
-                'href' => 'doctor/dashboard.php',
-                'icon' => '📊',
-            ],
-            'patient' => [
-                'label' => 'ข้อมูลผู้ป่วย',
-                'href' => 'doctor/patient-profile.php',
-                'icon' => '🔎',
-            ],
-            'treatment' => [
-                'label' => 'เพิ่มการรักษา',
-                'href' => 'doctor/add-treatment.php',
-                'icon' => '➕',
-            ],
-            'ai' => [
-                'label' => 'AI Risk',
-                'href' => 'doctor/ai-risk.php',
-                'icon' => '🧠',
-            ],
-            'referral' => [
-                'label' => 'ส่งตัว/ส่งต่อ',
-                'href' => 'doctor/referral.php',
-                'icon' => '🔁',
-            ],
-            'icu' => [
-                'label' => 'IPD / ICU / ผ่าตัด',
-                'href' => 'doctor/care-list.php?type=IPD',
-                'icon' => '🏥',
-            ],
-            'documents' => [
-                'label' => 'เอกสาร',
-                'href' => 'doctor/documents.php',
-                'icon' => '📄',
-            ],
+            'ai' => ['label' => 'AI Population', 'href' => 'doctor/population-health.php', 'icon' => 'spark'],
+            'dashboard' => ['label' => 'หน้าหลัก', 'href' => 'doctor/dashboard.php', 'icon' => 'home'],
+            'patient' => ['label' => 'ข้อมูลผู้ป่วย', 'href' => 'doctor/patient-profile.php', 'icon' => 'patient'],
+            'treatment' => ['label' => 'เพิ่มการรักษา', 'href' => 'doctor/add-treatment.php', 'icon' => 'plus'],
+            'ems' => ['label' => 'EMS MIST/SBAR', 'href' => 'doctor/ems-handover.php', 'icon' => 'ambulance'],
+            'rx' => ['label' => 'ยา/ใบสั่งยา', 'href' => 'doctor/prescriptions.php', 'icon' => 'rx'],
+            'progress' => ['label' => 'Progress Note', 'href' => 'doctor/progress-note.php', 'icon' => 'note'],
+            'referral' => ['label' => 'ส่งตัว/ส่งต่อ', 'href' => 'doctor/referral.php', 'icon' => 'transfer'],
+            'icu' => ['label' => 'IPD / ICU / ผ่าตัด', 'href' => 'doctor/care-list.php?type=IPD', 'icon' => 'icu'],
+            'documents' => ['label' => 'เวชระเบียน / เอกสาร', 'href' => 'doctor/documents.php', 'icon' => 'doc'],
         ];
     }
 
     if ($role === 'admin') {
         return [
-            'dashboard' => [
-                'label' => 'Dashboard',
-                'href' => 'admin/dashboard.php',
-                'icon' => '🛠️',
-            ],
-            'users' => [
-                'label' => 'ผู้ใช้งาน',
-                'href' => 'admin/users.php',
-                'icon' => '👥',
-            ],
-            'tickets' => [
-                'label' => 'Support',
-                'href' => 'admin/tickets.php',
-                'icon' => '🎫',
-            ],
+            'dashboard' => ['label' => 'Dashboard', 'href' => 'admin/dashboard.php', 'icon' => 'dashboard'],
+            'users' => ['label' => 'ผู้ใช้งาน', 'href' => 'admin/users.php', 'icon' => 'users'],
+            'tickets' => ['label' => 'Support', 'href' => 'admin/tickets.php', 'icon' => 'help'],
         ];
     }
 
@@ -320,12 +306,12 @@ function demo_patient_flow_summary(array $patients = []): array
 function usemed_care_type_map(): array
 {
     return [
-        'OPD' => ['label' => 'OPD', 'area' => 'OPD', 'icon' => '🏥', 'tone' => 'blue'],
-        'IPD' => ['label' => 'IPD', 'area' => 'IPD', 'icon' => '🛏️', 'tone' => 'green'],
-        'ICU' => ['label' => 'ICU', 'area' => 'ICU', 'icon' => '🚨', 'tone' => 'red'],
-        'SURGERY' => ['label' => 'ผ่าตัด', 'area' => 'ผ่าตัด', 'icon' => '🔪', 'tone' => 'orange'],
-        'SURGERY_QUEUE' => ['label' => 'คิวผ่าตัด', 'area' => 'คิวผ่าตัด', 'icon' => '📋', 'tone' => 'orange'],
-        'HIGH_WATCH' => ['label' => 'คนไข้เฝ้าระวังสูง', 'area' => 'คนไข้เฝ้าระวังสูง', 'icon' => '⚠️', 'tone' => 'red'],
+        'OPD' => ['label' => 'OPD', 'area' => 'OPD', 'icon' => '⌁', 'tone' => 'blue'],
+        'IPD' => ['label' => 'IPD', 'area' => 'IPD', 'icon' => 'IPD', 'tone' => 'green'],
+        'ICU' => ['label' => 'ICU', 'area' => 'ICU', 'icon' => 'ICU', 'tone' => 'red'],
+        'SURGERY' => ['label' => 'ผ่าตัด', 'area' => 'ผ่าตัด', 'icon' => 'OR', 'tone' => 'orange'],
+        'SURGERY_QUEUE' => ['label' => 'คิวผ่าตัด', 'area' => 'คิวผ่าตัด', 'icon' => 'Q', 'tone' => 'orange'],
+        'HIGH_WATCH' => ['label' => 'คนไข้เฝ้าระวังสูง', 'area' => 'คนไข้เฝ้าระวังสูง', 'icon' => '!', 'tone' => 'red'],
     ];
 }
 
@@ -915,6 +901,144 @@ function usemed_ensure_extended_schema(): void
         CONSTRAINT fk_referrals_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
         CONSTRAINT fk_referrals_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS patient_self_assessments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT DEFAULT NULL,
+        hn VARCHAR(50) DEFAULT NULL,
+        systolic INT DEFAULT NULL,
+        diastolic INT DEFAULT NULL,
+        fasting_glucose DECIMAL(8,2) DEFAULT NULL,
+        hba1c DECIMAL(5,2) DEFAULT NULL,
+        weight_kg DECIMAL(6,2) DEFAULT NULL,
+        height_cm DECIMAL(6,2) DEFAULT NULL,
+        bmi DECIMAL(6,2) DEFAULT NULL,
+        symptoms TEXT DEFAULT NULL,
+        medication_adherence VARCHAR(80) DEFAULT NULL,
+        risk_score INT DEFAULT NULL,
+        risk_level VARCHAR(50) DEFAULT NULL,
+        advice TEXT DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_self_assessment_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS prescriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT DEFAULT NULL,
+        doctor_id INT DEFAULT NULL,
+        visit_id INT DEFAULT NULL,
+        rx_no VARCHAR(80) DEFAULT NULL,
+        diagnosis TEXT DEFAULT NULL,
+        payment_method VARCHAR(100) DEFAULT NULL,
+        note TEXT DEFAULT NULL,
+        status VARCHAR(80) DEFAULT 'จ่ายยาแล้ว',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
+        CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL,
+        CONSTRAINT fk_prescriptions_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS prescription_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        prescription_id INT NOT NULL,
+        medication_name VARCHAR(255) NOT NULL,
+        strength VARCHAR(100) DEFAULT NULL,
+        dose VARCHAR(255) DEFAULT NULL,
+        route VARCHAR(80) DEFAULT NULL,
+        frequency VARCHAR(255) DEFAULT NULL,
+        duration VARCHAR(120) DEFAULT NULL,
+        quantity VARCHAR(80) DEFAULT NULL,
+        instruction TEXT DEFAULT NULL,
+        CONSTRAINT fk_prescription_items_rx FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS ems_cases (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT DEFAULT NULL,
+        doctor_id INT DEFAULT NULL,
+        case_type VARCHAR(80) DEFAULT 'medical',
+        ems_unit VARCHAR(255) DEFAULT NULL,
+        arrival_time DATETIME DEFAULT NULL,
+        chief_complaint TEXT DEFAULT NULL,
+        mechanism TEXT DEFAULT NULL,
+        injuries TEXT DEFAULT NULL,
+        signs_vitals TEXT DEFAULT NULL,
+        treatment_given TEXT DEFAULT NULL,
+        sbar_situation TEXT DEFAULT NULL,
+        sbar_background TEXT DEFAULT NULL,
+        sbar_assessment TEXT DEFAULT NULL,
+        sbar_recommendation TEXT DEFAULT NULL,
+        height_cm DECIMAL(6,2) DEFAULT NULL,
+        weight_kg DECIMAL(6,2) DEFAULT NULL,
+        bp VARCHAR(50) DEFAULT NULL,
+        pulse INT DEFAULT NULL,
+        rr INT DEFAULT NULL,
+        spo2 INT DEFAULT NULL,
+        temp DECIMAL(4,1) DEFAULT NULL,
+        gcs VARCHAR(20) DEFAULT NULL,
+        progress_note TEXT DEFAULT NULL,
+        status VARCHAR(80) DEFAULT 'รับเคสใหม่',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_ems_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
+        CONSTRAINT fk_ems_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS ai_population_scores (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT DEFAULT NULL,
+        hn VARCHAR(50) DEFAULT NULL,
+        model_version VARCHAR(80) DEFAULT 'rule-v1',
+        risk_score INT NOT NULL DEFAULT 0,
+        priority_level VARCHAR(20) NOT NULL DEFAULT 'P3',
+        priority_label VARCHAR(120) DEFAULT NULL,
+        recommended_sla VARCHAR(120) DEFAULT NULL,
+        trajectory_status VARCHAR(120) DEFAULT NULL,
+        cohort_tags TEXT DEFAULT NULL,
+        feature_snapshot LONGTEXT DEFAULT NULL,
+        recommendation_summary TEXT DEFAULT NULL,
+        calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_ai_population_patient (patient_id),
+        INDEX idx_ai_population_priority (priority_level),
+        INDEX idx_ai_population_hn (hn),
+        CONSTRAINT fk_ai_population_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS ai_population_reasons (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        score_id INT DEFAULT NULL,
+        patient_id INT DEFAULT NULL,
+        hn VARCHAR(50) DEFAULT NULL,
+        reason_type VARCHAR(80) DEFAULT NULL,
+        reason_text TEXT NOT NULL,
+        source_feature VARCHAR(120) DEFAULT NULL,
+        source_value VARCHAR(255) DEFAULT NULL,
+        source_table VARCHAR(120) DEFAULT NULL,
+        contribution INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_ai_reason_patient (patient_id),
+        CONSTRAINT fk_ai_reason_score FOREIGN KEY (score_id) REFERENCES ai_population_scores(id) ON DELETE CASCADE,
+        CONSTRAINT fk_ai_reason_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    db_execute("CREATE TABLE IF NOT EXISTS followup_tasks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT DEFAULT NULL,
+        hn VARCHAR(50) DEFAULT NULL,
+        priority_level VARCHAR(20) DEFAULT NULL,
+        task_type VARCHAR(120) DEFAULT NULL,
+        task_title VARCHAR(255) NOT NULL,
+        task_detail TEXT DEFAULT NULL,
+        due_date DATE DEFAULT NULL,
+        assigned_to VARCHAR(255) DEFAULT NULL,
+        status VARCHAR(80) DEFAULT 'รอติดตาม',
+        source VARCHAR(80) DEFAULT 'AI Population',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_followup_patient (patient_id),
+        INDEX idx_followup_status (status),
+        CONSTRAINT fk_followup_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 }
 
 function usemed_seed_demo_data(): void
@@ -1003,6 +1127,172 @@ function usemed_seed_demo_data(): void
             ]
         );
     }
+}
+
+
+function usemed_chronic_self_assessment(array $data): array
+{
+    $score = 0;
+    $factors = [];
+    $advice = [];
+
+    $sbp = (float) ($data['systolic'] ?? 0);
+    $dbp = (float) ($data['diastolic'] ?? 0);
+    $glucose = (float) ($data['fasting_glucose'] ?? 0);
+    $hba1c = (float) ($data['hba1c'] ?? 0);
+    $weight = (float) ($data['weight_kg'] ?? 0);
+    $height = (float) ($data['height_cm'] ?? 0);
+    $bmi = (float) ($data['bmi'] ?? 0);
+    $symptoms = implode(' ', (array) ($data['symptoms'] ?? []));
+    $adherence = (string) ($data['medication_adherence'] ?? '');
+
+    if ($bmi <= 0 && $weight > 0 && $height > 0) {
+        $bmi = round($weight / (($height / 100) ** 2), 1);
+    }
+
+    if ($sbp >= 180 || $dbp >= 120) {
+        $score += 35;
+        $factors[] = 'ความดันสูงมาก ควรประเมินซ้ำและพิจารณาพบแพทย์ทันทีหากมีอาการผิดปกติ';
+        $advice[] = 'วัดความดันซ้ำหลังพัก 5-10 นาที หากยังสูงมากหรือมีเจ็บหน้าอก เหนื่อย แขนขาอ่อนแรง ให้ไปโรงพยาบาลทันที';
+    } elseif ($sbp >= 140 || $dbp >= 90) {
+        $score += 18;
+        $factors[] = 'ความดันอยู่ในช่วงสูง';
+        $advice[] = 'ลดเค็ม บันทึกค่าความดันต่อเนื่อง และติดตามตามนัด';
+    }
+
+    if ($glucose >= 250) {
+        $score += 30;
+        $factors[] = 'น้ำตาลปลายนิ้ว/น้ำตาลอดอาหารสูงมาก';
+        $advice[] = 'ดื่มน้ำ ตรวจซ้ำ และติดต่อสถานพยาบาลหากมีซึม อาเจียน หอบ หรือปัสสาวะบ่อยมาก';
+    } elseif ($glucose >= 126) {
+        $score += 16;
+        $factors[] = 'ค่าน้ำตาลสูงกว่าช่วงเป้าหมาย';
+        $advice[] = 'ทบทวนอาหาร ยา และการออกกำลังกาย พร้อมบันทึกค่าไว้ติดตาม';
+    }
+
+    if ($hba1c >= 9) {
+        $score += 24;
+        $factors[] = 'HbA1c สูงมาก สะท้อนการควบคุมเบาหวานระยะยาวยังไม่ดี';
+        $advice[] = 'ควรนัดพบทีมรักษาเพื่อทบทวนแผนยา อาหาร และพฤติกรรม';
+    } elseif ($hba1c >= 7) {
+        $score += 12;
+        $factors[] = 'HbA1c สูงกว่าเป้าหมายทั่วไป';
+    }
+
+    if ($bmi >= 30) {
+        $score += 12;
+        $factors[] = 'BMI อยู่ในกลุ่มอ้วน';
+    } elseif ($bmi >= 25) {
+        $score += 7;
+        $factors[] = 'BMI อยู่ในกลุ่มน้ำหนักเกิน';
+    }
+
+    if (str_contains($symptoms, 'เจ็บหน้าอก') || str_contains($symptoms, 'หอบ') || str_contains($symptoms, 'อ่อนแรง') || str_contains($symptoms, 'ซึม')) {
+        $score += 25;
+        $factors[] = 'มีอาการเตือนที่ควรประเมินโดยบุคลากรทางการแพทย์';
+        $advice[] = 'หากอาการเป็นมากขึ้นหรือเกิดเฉียบพลัน ควรไปห้องฉุกเฉิน/โทร EMS';
+    }
+
+    if (str_contains($adherence, 'ลืม') || str_contains($adherence, 'ไม่สม่ำเสมอ')) {
+        $score += 8;
+        $factors[] = 'รับประทานยาไม่สม่ำเสมอ';
+        $advice[] = 'ตั้งเตือนกินยา หรือปรึกษาเภสัชกร/แพทย์หากมีผลข้างเคียง';
+    }
+
+    $score = min(100, max(0, $score));
+    if ($score >= 70) {
+        $level = 'สูง';
+        $color = 'red';
+    } elseif ($score >= 40) {
+        $level = 'ปานกลาง';
+        $color = 'orange';
+    } else {
+        $level = 'ต่ำ';
+        $color = 'green';
+    }
+
+    if (empty($factors)) {
+        $factors[] = 'ยังไม่พบสัญญาณเสี่ยงเด่นจากข้อมูลที่กรอก';
+    }
+    if (empty($advice)) {
+        $advice[] = 'ดูแลอาหาร ออกกำลังกายสม่ำเสมอ กินยาตามแพทย์สั่ง และติดตามตามนัด';
+        $advice[] = 'บันทึกค่าความดัน/น้ำตาลไว้เทียบแนวโน้มระยะยาว';
+    }
+
+    return [
+        'score' => $score,
+        'level' => $level,
+        'color' => $color,
+        'bmi' => $bmi,
+        'factors' => $factors,
+        'advice' => $advice,
+        'summary' => 'ผลนี้เป็นการประเมินเพื่อให้คำแนะนำส่วนตัว ไม่ส่งข้อมูลไปยังแพทย์โดยอัตโนมัติ',
+    ];
+}
+
+function usemed_mist_labels(string $caseType): array
+{
+    $caseType = strtolower($caseType);
+    if ($caseType === 'trauma') {
+        return [
+            'mechanism' => 'M: Mechanism กลไกการบาดเจ็บ',
+            'injuries' => 'I: Injuries บาดเจ็บที่พบ',
+            'signs' => 'S: Signs/Vital signs อาการและสัญญาณชีพ',
+            'treatment' => 'T: Treatment การรักษาที่ EMS ให้แล้ว',
+        ];
+    }
+    return [
+        'mechanism' => 'M: Medical illness / เหตุเจ็บป่วย',
+        'injuries' => 'I: Inspection / อาการสำคัญที่ตรวจพบ',
+        'signs' => 'S: Signs/Vital signs อาการและสัญญาณชีพ',
+        'treatment' => 'T: Treatment การรักษาที่ EMS ให้แล้ว',
+    ];
+}
+
+function usemed_population_recommendation(array $patient): array
+{
+    $score = (int) ($patient['risk_score'] ?? 0);
+    $age = (int) ($patient['age'] ?? 0);
+    $disease = strtolower((string) ($patient['disease'] ?? ''));
+    $area = (string) ($patient['care_area'] ?? 'OPD');
+    $reasons = [];
+    $actions = [];
+
+    if ($score >= 80 || !empty($patient['high_watch']) || $area === 'ICU') {
+        $priority = 'P1';
+        $level = 'เร่งด่วนมาก';
+        $reasons[] = 'อยู่ในกลุ่มเฝ้าระวังสูง/ICU หรือ risk score สูง';
+        $actions[] = 'ติดตามภายในวันนี้และ review medication/lab ล่าสุด';
+    } elseif ($score >= 65 || $area === 'IPD') {
+        $priority = 'P2';
+        $level = 'ควรติดตามก่อน';
+        $reasons[] = 'มี risk score ปานกลางถึงสูงหรือกำลังนอนโรงพยาบาล';
+        $actions[] = 'นัด follow-up ระยะสั้นและตรวจแนวโน้ม vital/lab';
+    } else {
+        $priority = 'P3';
+        $level = 'ติดตามตามรอบ';
+        $reasons[] = 'ยังไม่พบสัญญาณเสี่ยงเร่งด่วนจากข้อมูลล่าสุด';
+        $actions[] = 'ติดตามตามนัดและส่งความรู้สุขภาพแบบรายบุคคล';
+    }
+
+    if (str_contains($disease, 'diabetes') || str_contains($disease, 'gdm') || str_contains($disease, 'เบาหวาน')) {
+        $reasons[] = 'มีโรคเบาหวาน/ภาวะน้ำตาลสูง ต้องติดตาม HbA1c และ adherence';
+        $actions[] = 'จัด cohort เบาหวานและส่งคำแนะนำอาหาร/ยา';
+    }
+    if (str_contains($disease, 'hypertension') || str_contains($disease, 'ความดัน') || str_contains($disease, 'ckd')) {
+        $reasons[] = 'มีความดัน/ไต ต้องติดตาม BP, Cr/eGFR และ urine';
+        $actions[] = 'ติดตามความดันที่บ้านและตรวจ lab ตามรอบ';
+    }
+    if ($age >= 60) {
+        $reasons[] = 'อายุมากกว่า 60 ปี เพิ่มความเสี่ยงต่อภาวะแทรกซ้อน';
+    }
+
+    return [
+        'priority' => $priority,
+        'level' => $level,
+        'reasons' => array_values(array_unique($reasons)),
+        'actions' => array_values(array_unique($actions)),
+    ];
 }
 
 function render_empty_state(string $title, string $message): void

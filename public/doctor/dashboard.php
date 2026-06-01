@@ -131,6 +131,22 @@ topbar(
                 <div><strong>ส่งตัว / ส่งต่อ</strong><span>เลือกแผนก แพทย์ และโรงพยาบาลปลายทาง</span></div>
                 <span class="badge red">Refer</span>
             </a>
+            <a class="document-card" href="<?= e(app_url('doctor/population-health.php')) ?>">
+                <div><strong>AI Population Health</strong><span>จัดอันดับผู้ป่วยที่ควรติดตามก่อน พร้อม cohort และ recommendation</span></div>
+                <span class="badge red">AI</span>
+            </a>
+            <a class="document-card" href="<?= e(app_url('doctor/ems-handover.php')) ?>">
+                <div><strong>EMS MIST/SBAR</strong><span>รับเคสจากรถฉุกเฉิน แยก Medical / Trauma</span></div>
+                <span class="badge orange">EMS</span>
+            </a>
+            <a class="document-card" href="<?= e(app_url('doctor/prescriptions.php')) ?>">
+                <div><strong>ยา / ใบสั่งยา</strong><span>บันทึกจ่ายยา พิมพ์ใบสั่งยา และ Export Excel</span></div>
+                <span class="badge green">Rx</span>
+            </a>
+            <a class="document-card" href="<?= e(app_url('doctor/progress-note.php')) ?>">
+                <div><strong>Progress Note</strong><span>เปิดดู CC, vital signs, height/weight และ note ล่าสุด</span></div>
+                <span class="badge blue">Note</span>
+            </a>
         </div>
     </div>
 

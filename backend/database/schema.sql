@@ -267,3 +267,142 @@ SELECT 'doctor', 'นพ.กิตติ ภัทรเวช', 'เปิด�
 WHERE NOT EXISTS (SELECT 1 FROM support_tickets WHERE subject = 'เปิดเอกสาร PDF ไม่ได้');
 
 COMMIT;
+
+-- Step 13 additions: patient self assessment, prescriptions, EMS handover
+CREATE TABLE IF NOT EXISTS patient_self_assessments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT DEFAULT NULL,
+    hn VARCHAR(50) DEFAULT NULL,
+    systolic INT DEFAULT NULL,
+    diastolic INT DEFAULT NULL,
+    fasting_glucose DECIMAL(8,2) DEFAULT NULL,
+    hba1c DECIMAL(5,2) DEFAULT NULL,
+    weight_kg DECIMAL(6,2) DEFAULT NULL,
+    height_cm DECIMAL(6,2) DEFAULT NULL,
+    bmi DECIMAL(6,2) DEFAULT NULL,
+    symptoms TEXT DEFAULT NULL,
+    medication_adherence VARCHAR(80) DEFAULT NULL,
+    risk_score INT DEFAULT NULL,
+    risk_level VARCHAR(50) DEFAULT NULL,
+    advice TEXT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_self_assessment_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT DEFAULT NULL,
+    doctor_id INT DEFAULT NULL,
+    visit_id INT DEFAULT NULL,
+    rx_no VARCHAR(80) DEFAULT NULL,
+    diagnosis TEXT DEFAULT NULL,
+    payment_method VARCHAR(100) DEFAULT NULL,
+    note TEXT DEFAULT NULL,
+    status VARCHAR(80) DEFAULT 'จ่ายยาแล้ว',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
+    CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL,
+    CONSTRAINT fk_prescriptions_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS prescription_items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    prescription_id INT NOT NULL,
+    medication_name VARCHAR(255) NOT NULL,
+    strength VARCHAR(100) DEFAULT NULL,
+    dose VARCHAR(255) DEFAULT NULL,
+    route VARCHAR(80) DEFAULT NULL,
+    frequency VARCHAR(255) DEFAULT NULL,
+    duration VARCHAR(120) DEFAULT NULL,
+    quantity VARCHAR(80) DEFAULT NULL,
+    instruction TEXT DEFAULT NULL,
+    CONSTRAINT fk_prescription_items_rx FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ems_cases (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT DEFAULT NULL,
+    doctor_id INT DEFAULT NULL,
+    case_type VARCHAR(80) DEFAULT 'medical',
+    ems_unit VARCHAR(255) DEFAULT NULL,
+    arrival_time DATETIME DEFAULT NULL,
+    chief_complaint TEXT DEFAULT NULL,
+    mechanism TEXT DEFAULT NULL,
+    injuries TEXT DEFAULT NULL,
+    signs_vitals TEXT DEFAULT NULL,
+    treatment_given TEXT DEFAULT NULL,
+    sbar_situation TEXT DEFAULT NULL,
+    sbar_background TEXT DEFAULT NULL,
+    sbar_assessment TEXT DEFAULT NULL,
+    sbar_recommendation TEXT DEFAULT NULL,
+    height_cm DECIMAL(6,2) DEFAULT NULL,
+    weight_kg DECIMAL(6,2) DEFAULT NULL,
+    bp VARCHAR(50) DEFAULT NULL,
+    pulse INT DEFAULT NULL,
+    rr INT DEFAULT NULL,
+    spo2 INT DEFAULT NULL,
+    temp DECIMAL(4,1) DEFAULT NULL,
+    gcs VARCHAR(20) DEFAULT NULL,
+    progress_note TEXT DEFAULT NULL,
+    status VARCHAR(80) DEFAULT 'รับเคสใหม่',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ems_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
+    CONSTRAINT fk_ems_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_population_scores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT DEFAULT NULL,
+    hn VARCHAR(50) DEFAULT NULL,
+    model_version VARCHAR(80) DEFAULT 'rule-v1',
+    risk_score INT NOT NULL DEFAULT 0,
+    priority_level VARCHAR(20) NOT NULL DEFAULT 'P3',
+    priority_label VARCHAR(120) DEFAULT NULL,
+    recommended_sla VARCHAR(120) DEFAULT NULL,
+    trajectory_status VARCHAR(120) DEFAULT NULL,
+    cohort_tags TEXT DEFAULT NULL,
+    feature_snapshot LONGTEXT DEFAULT NULL,
+    recommendation_summary TEXT DEFAULT NULL,
+    calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ai_population_patient (patient_id),
+    INDEX idx_ai_population_priority (priority_level),
+    INDEX idx_ai_population_hn (hn),
+    CONSTRAINT fk_ai_population_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_population_reasons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    score_id INT DEFAULT NULL,
+    patient_id INT DEFAULT NULL,
+    hn VARCHAR(50) DEFAULT NULL,
+    reason_type VARCHAR(80) DEFAULT NULL,
+    reason_text TEXT NOT NULL,
+    source_feature VARCHAR(120) DEFAULT NULL,
+    source_value VARCHAR(255) DEFAULT NULL,
+    source_table VARCHAR(120) DEFAULT NULL,
+    contribution INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ai_reason_patient (patient_id),
+    CONSTRAINT fk_ai_reason_score FOREIGN KEY (score_id) REFERENCES ai_population_scores(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ai_reason_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS followup_tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT DEFAULT NULL,
+    hn VARCHAR(50) DEFAULT NULL,
+    priority_level VARCHAR(20) DEFAULT NULL,
+    task_type VARCHAR(120) DEFAULT NULL,
+    task_title VARCHAR(255) NOT NULL,
+    task_detail TEXT DEFAULT NULL,
+    due_date DATE DEFAULT NULL,
+    assigned_to VARCHAR(255) DEFAULT NULL,
+    status VARCHAR(80) DEFAULT 'รอติดตาม',
+    source VARCHAR(80) DEFAULT 'AI Population',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_followup_patient (patient_id),
+    INDEX idx_followup_status (status),
+    CONSTRAINT fk_followup_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
