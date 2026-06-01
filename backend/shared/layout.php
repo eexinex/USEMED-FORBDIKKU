@@ -17,7 +17,9 @@ function page_start(string $title = 'USE MED', string $role = 'guest', string $a
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?> | USE MED</title>
-    <link rel="stylesheet" href="<?= e(app_url('assets/usemed.css')) ?>?v=step23-force-small-hero-20260601">
+    <!-- DEBUG: APP_URL = "<?= e(APP_URL) ?>" -->
+    <!-- DEBUG: SCRIPT_NAME = "<?= e($_SERVER['SCRIPT_NAME'] ?? '') ?>" -->
+    <link rel="stylesheet" href="<?= e(app_url('assets/usemed.css')) ?>?v=step24-debug">
 </head>
 <body class="role-<?= e($role) ?> active-<?= e($active) ?>">
 <div class="<?= $role === 'guest' ? 'guest-shell' : 'app-shell' ?>">

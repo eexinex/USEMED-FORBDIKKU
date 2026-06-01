@@ -32,6 +32,12 @@ if (!defined('APP_NAME')) {
 if (!function_exists('detect_app_base')) {
     function detect_app_base(): string
     {
+        // Hugging Face Spaces provides SPACE_HOST (e.g. username-spacename.hf.space)
+        $spaceHost = getenv('SPACE_HOST');
+        if ($spaceHost !== false && $spaceHost !== '') {
+            return 'https://' . $spaceHost;
+        }
+
         $script = $_SERVER['SCRIPT_NAME'] ?? '';
 
         if ($script !== '') {
@@ -136,7 +142,18 @@ if (!function_exists('frontend_url')) {
         if (str_ends_with($base, '/public')) {
             $base = substr($base, 0, -strlen('/public')) . '/frontend';
         } else {
-            $base = rtrim(dirname($base), '/') . '/frontend';
+            // For absolute URL or empty, just append /frontend if there's no path
+            // But actually frontend is NOT in public/ on DocumentRoot.
+            // Wait, if DocumentRoot is public/, then /frontend is NOT ACCESSIBLE!
+            // We should use an absolute path or relative path, but since it's not served, 
+            // frontend_url is only used for the LINE Bot CSS. We'll just return APP_URL/../frontend
+            $parts = parse_url($base);
+            if (isset($parts['scheme']) && isset($parts['host'])) {
+                $base = $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '') . (isset($parts['path']) ? dirname($parts['path']) : '') . '/frontend';
+            } else {
+                $base = $base === '' ? '/frontend' : rtrim(dirname($base), '/') . '/frontend';
+            }
+            $base = str_replace('\\', '/', $base);
         }
         return $base . '/' . ltrim($path, '/');
     }
