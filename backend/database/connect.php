@@ -19,9 +19,19 @@ function db(): ?PDO
     }
 
     try {
+        $host = DB_HOST;
+        $port = defined('DB_PORT') && DB_PORT !== '' ? DB_PORT : '5432';
+
+        if (strpos($host, ':') !== false) {
+            $parts = explode(':', $host, 2);
+            $host = $parts[0];
+            $port = $parts[1];
+        }
+
         $dsn = sprintf(
-            'pgsql:host=%s;dbname=%s', // PostgreSQL doesn't use charset in DSN the same way
-            DB_HOST,
+            'pgsql:host=%s;port=%s;dbname=%s',
+            $host,
+            $port,
             DB_NAME
         );
 
@@ -29,17 +39,14 @@ function db(): ?PDO
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_TIMEOUT => 5, // 5 seconds timeout to prevent hanging
         ]);
 
         return $pdo;
     } catch (Throwable $e) {
         $failed = true;
-
-        if (DEMO_MODE === true) {
-            return null;
-        }
-
-        die('Database connection failed: ' . e($e->getMessage()));
+        error_log('Database connection failed: ' . $e->getMessage());
+        return null;
     }
 }
 
