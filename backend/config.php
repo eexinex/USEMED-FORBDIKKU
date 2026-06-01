@@ -58,7 +58,8 @@ if (!function_exists('detect_app_base')) {
 }
 
 if (!defined('APP_URL')) {
-    define('APP_URL', rtrim((string) envv('USEMED_PUBLIC_URL', detect_app_base()), '/'));
+    // Ignore USEMED_PUBLIC_URL environment variable to prevent wrong manual settings from breaking the app
+    define('APP_URL', rtrim(detect_app_base(), '/'));
 }
 
 if (!defined('LINE_CHANNEL_ACCESS_TOKEN')) {
