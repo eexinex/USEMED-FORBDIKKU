@@ -1,12 +1,11 @@
 -- backend/database/schema.sql
 -- USE MED demo data: 10 patients, 3 doctors, patient flow, referrals
 
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-SET time_zone = "+00:00";
+SET TIME ZONE 'UTC';
 
 CREATE TABLE IF NOT EXISTS patients (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     hn VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
@@ -23,7 +22,7 @@ CREATE TABLE IF NOT EXISTS patients (
     hospital VARCHAR(255) DEFAULT NULL,
     ward VARCHAR(255) DEFAULT NULL,
     surgery_status VARCHAR(255) DEFAULT NULL,
-    high_watch TINYINT(1) DEFAULT 0,
+    high_watch SMALLINT DEFAULT 0,
     blood_group VARCHAR(20) DEFAULT NULL,
     payment_method VARCHAR(100) DEFAULT NULL,
     insurance_detail VARCHAR(255) DEFAULT NULL,
@@ -49,16 +48,16 @@ CREATE TABLE IF NOT EXISTS patients (
     daily_note TEXT DEFAULT NULL,
     monitoring_frequency VARCHAR(120) DEFAULT NULL,
     escalation_plan TEXT DEFAULT NULL,
-    last_round_date DATETIME DEFAULT NULL,
+    last_round_date TIMESTAMP DEFAULT NULL,
     registration_source VARCHAR(80) DEFAULT NULL,
     registration_status VARCHAR(80) DEFAULT 'active',
-    consent_accepted_at DATETIME DEFAULT NULL,
+    consent_accepted_at TIMESTAMP DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    updated_at TIMESTAMP NULL DEFAULT NULL 
+);
 
 CREATE TABLE IF NOT EXISTS doctors (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
@@ -66,18 +65,18 @@ CREATE TABLE IF NOT EXISTS doctors (
     department VARCHAR(255) DEFAULT NULL,
     hospital VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS admin_users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS visits (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT NOT NULL,
     doctor_id INT DEFAULT NULL,
     visit_date DATE NOT NULL,
@@ -161,10 +160,10 @@ CREATE TABLE IF NOT EXISTS visits (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_visits_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
     CONSTRAINT fk_visits_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS documents (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT NOT NULL,
     visit_id INT DEFAULT NULL,
     title VARCHAR(255) NOT NULL,
@@ -173,10 +172,10 @@ CREATE TABLE IF NOT EXISTS documents (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_documents_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
     CONSTRAINT fk_documents_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS referrals (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT DEFAULT NULL,
     doctor_id INT DEFAULT NULL,
     from_department VARCHAR(255) DEFAULT NULL,
@@ -189,10 +188,10 @@ CREATE TABLE IF NOT EXISTS referrals (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_referrals_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
     CONSTRAINT fk_referrals_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS support_tickets (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     user_role VARCHAR(50) DEFAULT NULL,
     user_name VARCHAR(255) DEFAULT NULL,
     subject VARCHAR(255) NOT NULL,
@@ -201,7 +200,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     message TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'open',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 INSERT INTO patients (hn, password, full_name, gender, age, phone, disease, address, care_area, hospital, ward, surgery_status, high_watch)
 VALUES
@@ -215,23 +214,23 @@ VALUES
 ('HN0008','123456','รัชนี พูลผล','หญิง',49,'088-989-3311','Breast mass workup','กรุงเทพมหานคร','คิวผ่าตัด','โรงพยาบาลจุฬาลงกรณ์ สภากาชาดไทย','Surgical Queue','รอคิวผ่าตัด',0),
 ('HN0009','123456','ศุภชัย คำดี','ชาย',33,'089-100-2000','Trauma observation','เขตลาดกระบัง กรุงเทพฯ','คนไข้เฝ้าระวังสูง','โรงพยาบาลพระจอมเกล้าเจ้าคุณทหาร','Observation Unit','รอ CT',1),
 ('HN0010','123456','มลฤดี ศรีสุข','หญิง',61,'080-444-8181','Stroke rehabilitation','จ.ขอนแก่น','IPD','โรงพยาบาลขอนแก่น','Rehab Ward','-',0)
-ON DUPLICATE KEY UPDATE
-password=VALUES(password), full_name=VALUES(full_name), gender=VALUES(gender), age=VALUES(age), phone=VALUES(phone), disease=VALUES(disease), address=VALUES(address), care_area=VALUES(care_area), hospital=VALUES(hospital), ward=VALUES(ward), surgery_status=VALUES(surgery_status), high_watch=VALUES(high_watch);
+ON CONFLICT (hn) DO UPDATE SET
+password=EXCLUDED.password, full_name=EXCLUDED.full_name, gender=EXCLUDED.gender, age=EXCLUDED.age, phone=EXCLUDED.phone, disease=EXCLUDED.disease, address=EXCLUDED.address, care_area=EXCLUDED.care_area, hospital=EXCLUDED.hospital, ward=EXCLUDED.ward, surgery_status=EXCLUDED.surgery_status, high_watch=EXCLUDED.high_watch;
 
 INSERT INTO doctors (username, password, full_name, license_no, department, hospital)
 VALUES
 ('doctor1','123456','นพ.กิตติ ภัทรเวช','MD-1026588','อายุรกรรม','โรงพยาบาลขอนแก่น'),
 ('doctor2','123456','พญ.ณิชา ศรีแพทย์','MD-2047712','ศัลยกรรมทั่วไป','โรงพยาบาลศรีนครินทร์'),
 ('doctor3','123456','นพ.ธนดล วัฒนกุล','MD-3091188','เวชบำบัดวิกฤต','โรงพยาบาลพระจอมเกล้าเจ้าคุณทหาร')
-ON DUPLICATE KEY UPDATE
-password=VALUES(password), full_name=VALUES(full_name), license_no=VALUES(license_no), department=VALUES(department), hospital=VALUES(hospital);
+ON CONFLICT (username) DO UPDATE SET
+password=EXCLUDED.password, full_name=EXCLUDED.full_name, license_no=EXCLUDED.license_no, department=EXCLUDED.department, hospital=EXCLUDED.hospital;
 
 INSERT INTO admin_users (username, password, full_name)
 VALUES ('admin', 'admin123', 'USE MED Admin')
-ON DUPLICATE KEY UPDATE password=VALUES(password), full_name=VALUES(full_name);
+ON CONFLICT (username) DO UPDATE SET password=EXCLUDED.password, full_name=EXCLUDED.full_name;
 
 INSERT INTO visits (patient_id, doctor_id, visit_date, title, diagnosis, treatment_plan, systolic, diastolic, pulse, glucose, hba1c, bmi, cholesterol, visit_type, visit_reason, care_area, hospital, payment_method, insurance_detail, blood_group, weight_kg, height_cm, temperature, respiratory_rate, oxygen_saturation, alcohol_use, smoking_status, has_surgery, surgery_type, surgery_note, has_menstruation, last_menstrual_period, investigations, lab_results, urine_results, xray_results, mri_results, imaging_results, doctor_education, next_appointment_detail, followup_date, risk_score, risk_level)
-SELECT p.id, d.id, '2026-05-27', 'ตรวจติดตาม / ประเมินอาการล่าสุด', p.disease, CONCAT('สถานะ ', p.care_area, ' แผนก ', COALESCE(p.ward, '-')), 148, 92, 78, 142.00, 7.80, 27.40, 218.00, 'OPD', 'ติดตามอาการและประเมินผลการรักษาล่าสุด', p.care_area, p.hospital, 'บัตร 30 บาท / UC', 'สิทธิหลักประกันสุขภาพแห่งชาติ', 'O+', 68.00, 165.00, 36.8, 18, 98, 'ไม่ดื่ม', 'ไม่สูบ', 'ไม่มี', '-', '-', IF(p.gender='หญิง','มี/สอบถามแล้ว','ไม่เกี่ยวข้อง'), IF(p.gender='หญิง','2026-05-01',NULL), 'ตรวจเลือด, ตรวจปัสสาวะ, X-ray', 'CBC/FBS/HbA1c/Lipid profile', 'Urinalysis', 'X-ray ตามข้อบ่งชี้', '-', 'ผลตรวจภาพถ่ายประกอบการวินิจฉัย', 'ให้ความรู้เรื่องยา อาการผิดปกติ และการมาตามนัด', 'นัดติดตามตามแผนรักษา หากอาการแย่ลงให้มาก่อนนัด', '2026-06-12', IF(p.high_watch=1, 82, 58), IF(p.high_watch=1, 'High', 'Medium')
+SELECT p.id, d.id, '2026-05-27', 'ตรวจติดตาม / ประเมินอาการล่าสุด', p.disease, CONCAT('สถานะ ', p.care_area, ' แผนก ', COALESCE(p.ward, '-')), 148, 92, 78, 142.00, 7.80, 27.40, 218.00, 'OPD', 'ติดตามอาการและประเมินผลการรักษาล่าสุด', p.care_area, p.hospital, 'บัตร 30 บาท / UC', 'สิทธิหลักประกันสุขภาพแห่งชาติ', 'O+', 68.00, 165.00, 36.8, 18, 98, 'ไม่ดื่ม', 'ไม่สูบ', 'ไม่มี', '-', '-', CASE WHEN p.gender='หญิง' THEN 'มี/สอบถามแล้ว' ELSE 'ไม่เกี่ยวข้อง' END, CASE WHEN p.gender='หญิง' THEN CAST('2026-05-01' AS DATE) ELSE NULL END, 'ตรวจเลือด, ตรวจปัสสาวะ, X-ray', 'CBC/FBS/HbA1c/Lipid profile', 'Urinalysis', 'X-ray ตามข้อบ่งชี้', '-', 'ผลตรวจภาพถ่ายประกอบการวินิจฉัย', 'ให้ความรู้เรื่องยา อาการผิดปกติ และการมาตามนัด', 'นัดติดตามตามแผนรักษา หากอาการแย่ลงให้มาก่อนนัด', '2026-06-12', CASE WHEN p.high_watch=1 THEN 82 ELSE 58 END, CASE WHEN p.high_watch=1 THEN 'High' ELSE 'Medium' END
 FROM patients p LEFT JOIN doctors d ON d.username = 'doctor1'
 WHERE NOT EXISTS (SELECT 1 FROM visits v WHERE v.patient_id = p.id AND v.visit_date = '2026-05-27');
 
@@ -270,7 +269,7 @@ COMMIT;
 
 -- Step 13 additions: patient self assessment, prescriptions, EMS handover
 CREATE TABLE IF NOT EXISTS patient_self_assessments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT DEFAULT NULL,
     hn VARCHAR(50) DEFAULT NULL,
     systolic INT DEFAULT NULL,
@@ -287,10 +286,10 @@ CREATE TABLE IF NOT EXISTS patient_self_assessments (
     advice TEXT DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_self_assessment_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS prescriptions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT DEFAULT NULL,
     doctor_id INT DEFAULT NULL,
     visit_id INT DEFAULT NULL,
@@ -303,10 +302,10 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     CONSTRAINT fk_prescriptions_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
     CONSTRAINT fk_prescriptions_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL,
     CONSTRAINT fk_prescriptions_visit FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS prescription_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     prescription_id INT NOT NULL,
     medication_name VARCHAR(255) NOT NULL,
     strength VARCHAR(100) DEFAULT NULL,
@@ -317,15 +316,15 @@ CREATE TABLE IF NOT EXISTS prescription_items (
     quantity VARCHAR(80) DEFAULT NULL,
     instruction TEXT DEFAULT NULL,
     CONSTRAINT fk_prescription_items_rx FOREIGN KEY (prescription_id) REFERENCES prescriptions(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS ems_cases (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT DEFAULT NULL,
     doctor_id INT DEFAULT NULL,
     case_type VARCHAR(80) DEFAULT 'medical',
     ems_unit VARCHAR(255) DEFAULT NULL,
-    arrival_time DATETIME DEFAULT NULL,
+    arrival_time TIMESTAMP DEFAULT NULL,
     chief_complaint TEXT DEFAULT NULL,
     mechanism TEXT DEFAULT NULL,
     injuries TEXT DEFAULT NULL,
@@ -348,10 +347,10 @@ CREATE TABLE IF NOT EXISTS ems_cases (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_ems_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL,
     CONSTRAINT fk_ems_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS ai_population_scores (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT DEFAULT NULL,
     hn VARCHAR(50) DEFAULT NULL,
     model_version VARCHAR(80) DEFAULT 'rule-v1',
@@ -361,18 +360,16 @@ CREATE TABLE IF NOT EXISTS ai_population_scores (
     recommended_sla VARCHAR(120) DEFAULT NULL,
     trajectory_status VARCHAR(120) DEFAULT NULL,
     cohort_tags TEXT DEFAULT NULL,
-    feature_snapshot LONGTEXT DEFAULT NULL,
+    feature_snapshot TEXT DEFAULT NULL,
     recommendation_summary TEXT DEFAULT NULL,
     calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_ai_population_patient (patient_id),
-    INDEX idx_ai_population_priority (priority_level),
-    INDEX idx_ai_population_hn (hn),
+    updated_at TIMESTAMP NULL DEFAULT NULL ,
+    CONSTRAINT uq_ai_population_patient UNIQUE (patient_id),
     CONSTRAINT fk_ai_population_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS ai_population_reasons (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     score_id INT DEFAULT NULL,
     patient_id INT DEFAULT NULL,
     hn VARCHAR(50) DEFAULT NULL,
@@ -383,13 +380,12 @@ CREATE TABLE IF NOT EXISTS ai_population_reasons (
     source_table VARCHAR(120) DEFAULT NULL,
     contribution INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ai_reason_patient (patient_id),
     CONSTRAINT fk_ai_reason_score FOREIGN KEY (score_id) REFERENCES ai_population_scores(id) ON DELETE CASCADE,
     CONSTRAINT fk_ai_reason_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
 
 CREATE TABLE IF NOT EXISTS followup_tasks (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     patient_id INT DEFAULT NULL,
     hn VARCHAR(50) DEFAULT NULL,
     priority_level VARCHAR(20) DEFAULT NULL,
@@ -401,8 +397,36 @@ CREATE TABLE IF NOT EXISTS followup_tasks (
     status VARCHAR(80) DEFAULT 'รอติดตาม',
     source VARCHAR(80) DEFAULT 'AI Population',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_followup_patient (patient_id),
-    INDEX idx_followup_status (status),
+    updated_at TIMESTAMP NULL DEFAULT NULL ,
     CONSTRAINT fk_followup_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+);
+
+CREATE TABLE IF NOT EXISTS patient_longitudinal_records (
+    id SERIAL PRIMARY KEY,
+    patient_id INT DEFAULT NULL,
+    hn VARCHAR(50) DEFAULT NULL,
+    period_offset INT NOT NULL,
+    systolic INT DEFAULT NULL,
+    diastolic INT DEFAULT NULL,
+    pulse INT DEFAULT NULL,
+    respiratory_rate INT DEFAULT NULL,
+    hba1c DECIMAL(5,2) DEFAULT NULL,
+    c_peptide DECIMAL(8,2) DEFAULT NULL,
+    lipid_ldl DECIMAL(8,2) DEFAULT NULL,
+    med_metformin SMALLINT DEFAULT 0,
+    med_insulin SMALLINT DEFAULT 0,
+    med_glp1 SMALLINT DEFAULT 0,
+    med_arb SMALLINT DEFAULT 0,
+    med_ccb SMALLINT DEFAULT 0,
+    med_acei SMALLINT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_longitudinal_patient FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+);
+
+
+CREATE INDEX idx_ai_population_priority ON ai_population_scores (priority_level);
+CREATE INDEX idx_ai_population_hn ON ai_population_scores (hn);
+CREATE INDEX idx_ai_reason_patient ON ai_population_reasons (patient_id);
+CREATE INDEX idx_followup_patient ON followup_tasks (patient_id);
+CREATE INDEX idx_followup_status ON followup_tasks (status);
+CREATE INDEX idx_longitudinal_patient ON patient_longitudinal_records (patient_id);

@@ -251,7 +251,7 @@ function usemed_ai_count_recent_visits(array $patient, int $days = 180): int
     }
 
     $row = db_fetch_one(
-        'SELECT COUNT(*) AS c FROM visits WHERE patient_id = :patient_id AND visit_date >= DATE_SUB(CURDATE(), INTERVAL ' . max(1, $days) . ' DAY)',
+        'SELECT COUNT(*) AS c FROM visits WHERE patient_id = :patient_id AND visit_date >= CURRENT_DATE - INTERVAL \'' . max(1, $days) . ' days\'',
         ['patient_id' => (int) $patient['id']]
     );
 
@@ -424,6 +424,47 @@ function usemed_ai_trajectory_status(array $features, int $score): string
     return 'คงที่/ติดตามตามรอบ';
 }
 
+function usemed_ai_call_ml_service(array $patient, array $features): ?array
+{
+    // Mapping features to the Python ML API format
+    $payload = [
+        'hn' => (string) ($patient['hn'] ?? 'Unknown'),
+        'age' => (int) ($features['age'] ?? 0),
+        'gender' => (string) ($features['gender'] ?? 'Unknown'),
+        'disease_type' => (string) ($features['disease_text'] ?? 'Unknown'),
+        'systolic' => $features['systolic'],
+        'diastolic' => $features['diastolic'],
+        'hba1c' => $features['hba1c'],
+        'c_peptide' => null,
+        'history_systolic' => [], // Would be populated from patient_longitudinal_records
+        'history_hba1c' => $features['hba1c_trend'] ?? [],
+        'med_metformin' => strpos(strtolower($features['additional_medication'] ?? ''), 'metformin') !== false ? 1 : 0,
+        'med_insulin' => strpos(strtolower($features['additional_medication'] ?? ''), 'insulin') !== false ? 1 : 0,
+        'med_ccb' => strpos(strtolower($features['additional_medication'] ?? ''), 'amlodipine') !== false ? 1 : 0,
+        'med_arb' => strpos(strtolower($features['additional_medication'] ?? ''), 'losartan') !== false ? 1 : 0,
+        'med_acei' => strpos(strtolower($features['additional_medication'] ?? ''), 'enalapril') !== false ? 1 : 0,
+    ];
+
+    $ch = curl_init('http://127.0.0.1:8000/predict');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Prevent UI hanging if ML service is down
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200 && $response) {
+        $decoded = json_decode($response, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+    }
+    return null;
+}
+
 function usemed_ai_score_patient(array $patient, bool $persist = true): array
 {
     usemed_ai_ensure_population_schema();
@@ -581,6 +622,28 @@ function usemed_ai_score_patient(array $patient, bool $persist = true): array
         usemed_ai_add_reason($reasons, 'default', 'ยังไม่พบสัญญาณเสี่ยงเด่นจากข้อมูลล่าสุด จัดอยู่ในกลุ่มติดตามตามรอบ', 'available_data', 'limited', 0, 'patients/visits');
     }
 
+    // --- ML Service Integration (Phase 3) ---
+    $mlResult = usemed_ai_call_ml_service($patient, $features);
+    if ($mlResult) {
+        $score += (int) ($mlResult['overall_score_modifier'] ?? 0);
+        
+        if (!empty($mlResult['diabetes_recommendation'])) {
+            $actions[] = "🤖 ML Suggestion [Diabetes]: " . $mlResult['diabetes_recommendation'];
+        }
+        if (!empty($mlResult['hypertension_recommendation'])) {
+            $actions[] = "🤖 ML Suggestion [Hypertension]: " . $mlResult['hypertension_recommendation'];
+        }
+        
+        $predStrs = [];
+        if (!empty($mlResult['predicted_hba1c_60d'])) $predStrs[] = "HbA1c ~" . $mlResult['predicted_hba1c_60d'] . "%";
+        if (!empty($mlResult['predicted_systolic_60d'])) $predStrs[] = "BP ~" . $mlResult['predicted_systolic_60d'] . " mmHg";
+        
+        if (!empty($predStrs)) {
+            $trajectory = "AI Predicts in 60 Days: " . implode(', ', $predStrs);
+        }
+    }
+    // ----------------------------------------
+
     $result = [
         'score' => $score,
         'priority' => $priority['priority'],
@@ -676,7 +739,7 @@ function usemed_ai_persist_population_score(array $patient, array $result): void
                 'INSERT INTO followup_tasks
                     (patient_id, hn, priority_level, task_type, task_title, task_detail, due_date, status, source)
                  VALUES
-                    (:patient_id, :hn, :priority_level, :task_type, :task_title, :task_detail, DATE_ADD(CURDATE(), INTERVAL ' . $days . ' DAY), :status, :source)',
+                    (:patient_id, :hn, :priority_level, :task_type, :task_title, :task_detail, CURRENT_DATE + INTERVAL \'' . $days . ' days\', :status, :source)',
                 [
                     'patient_id' => $patientId,
                     'hn' => (string) ($patient['hn'] ?? ''),

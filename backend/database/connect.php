@@ -20,10 +20,9 @@ function db(): ?PDO
 
     try {
         $dsn = sprintf(
-            'mysql:host=%s;dbname=%s;charset=%s',
+            'pgsql:host=%s;dbname=%s', // PostgreSQL doesn't use charset in DSN the same way
             DB_HOST,
-            DB_NAME,
-            DB_CHARSET
+            DB_NAME
         );
 
         $pdo = new PDO($dsn, DB_USER, DB_PASS, [
