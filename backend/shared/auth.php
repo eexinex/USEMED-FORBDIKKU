@@ -63,7 +63,7 @@ function login_patient(string $hn, string $password): bool
         return true;
     }
 
-    if (DEMO_MODE === true && $password === DEMO_PATIENT_PASSWORD && function_exists('demo_patients')) {
+    if ($password === DEMO_PATIENT_PASSWORD && function_exists('demo_patients')) {
         foreach (demo_patients() as $demoPatient) {
             if (strcasecmp((string) $demoPatient['hn'], $hn) === 0) {
                 $_SESSION['user'] = [
@@ -107,7 +107,7 @@ function login_doctor(string $username, string $password): bool
         return true;
     }
 
-    if (DEMO_MODE === true && $password === DEMO_DOCTOR_PASSWORD && function_exists('demo_doctors')) {
+    if ($password === DEMO_DOCTOR_PASSWORD && function_exists('demo_doctors')) {
         foreach (demo_doctors() as $demoDoctor) {
             if (strcasecmp((string) $demoDoctor['username'], $username) === 0) {
                 $_SESSION['user'] = [
@@ -152,7 +152,7 @@ function login_admin(string $username, string $password): bool
         return true;
     }
 
-    if (DEMO_MODE === true && $username === DEMO_ADMIN_USERNAME && $password === DEMO_ADMIN_PASSWORD) {
+    if ($username === DEMO_ADMIN_USERNAME && $password === DEMO_ADMIN_PASSWORD) {
         $_SESSION['user'] = [
             'id' => 1,
             'role' => 'admin',
