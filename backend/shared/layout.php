@@ -141,7 +141,6 @@ function nav_items(string $role): array
 
     if ($role === 'doctor') {
         return [
-            'ai' => ['label' => 'AI Population', 'href' => 'doctor/population-health.php', 'icon' => 'spark'],
             'dashboard' => ['label' => 'หน้าหลัก', 'href' => 'doctor/dashboard.php', 'icon' => 'home'],
             'patient' => ['label' => 'ข้อมูลผู้ป่วย', 'href' => 'doctor/patient-profile.php', 'icon' => 'patient'],
             'treatment' => ['label' => 'เพิ่มการรักษา', 'href' => 'doctor/add-treatment.php', 'icon' => 'plus'],

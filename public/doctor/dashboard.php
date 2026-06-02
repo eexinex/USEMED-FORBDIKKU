@@ -81,195 +81,124 @@ $flowIcons = [
 ];
 
 page_start('Doctor Dashboard', 'doctor', 'dashboard');
-
-topbar(
-    'Doctor Dashboard',
-    'ภาพรวม OPD / IPD / ICU / ผ่าตัด / คิวผ่าตัด / ส่งต่อแผนกและโรงพยาบาล'
-);
 ?>
 
-<section class="stat-grid">
-    <?php stat_card('ผู้ป่วยในระบบ', (string) $patientCount, 'Patients'); ?>
-    <?php stat_card('ประวัติการรักษา', (string) $visitCount, 'Visits'); ?>
-    <?php stat_card('เอกสารสุขภาพ', (string) $documentCount, 'Documents'); ?>
-    <?php stat_card('เฝ้าระวังสูง', (string) $highRiskCount, 'High Watch'); ?>
-</section>
+<div style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
+    
+    <!-- Hero / Welcome Card -->
+    <div class="card" style="padding: 32px; margin-bottom: 24px; border-left: 6px solid var(--primary); background: #ffffff;">
+        <h1 style="margin: 0 0 8px; font-size: 28px; color: var(--ink);">สวัสดี นพ.<?= e($doctor['first_name'] ?? 'กิตติ') ?> 👋</h1>
+        <p style="margin: 0; color: var(--muted); font-size: 16px;">ภาพรวมประจำวัน: มีคนไข้เฝ้าระวังสูง <strong style="color: var(--primary-dark);"><?= e((string)$highRiskCount) ?> ราย</strong> ที่ต้องการความสนใจเป็นพิเศษ</p>
+    </div>
 
-<section class="grid grid-3" id="patient-flow">
-    <?php foreach ($flowSummary as $label => $count): ?>
-        <a class="card care-flow-card" href="<?= e(app_url('doctor/care-list.php?type=' . urlencode(usemed_care_type_key_from_label((string) $label)))) ?>">
-            <h3><?= e(($flowIcons[$label] ?? '🏥') . ' ' . $label) ?></h3>
-            <p>เปิดดูรายชื่อผู้ป่วยในกลุ่มนี้เพื่อ follow up</p>
-            <div class="mt-1">
-                <span class="badge <?= e($label === 'ICU' || $label === 'คนไข้เฝ้าระวังสูง' ? 'red' : ($label === 'คิวผ่าตัด' || $label === 'ผ่าตัด' ? 'orange' : 'blue')) ?>">
-                    <?= e((string) $count) ?> ราย
-                </span>
+    <!-- Prominent AI Population Health Link -->
+    <a href="<?= e(app_url('doctor/population-health.php')) ?>" class="card" style="display: block; text-decoration: none; padding: 24px; margin-bottom: 24px; background: var(--bg); border: 1px solid var(--primary); transition: transform 0.2s ease;">
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="width: 64px; height: 64px; border-radius: 16px; background: var(--primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 28px;">✦</div>
+            <div>
+                <h2 style="margin: 0 0 4px; font-size: 22px; color: var(--primary-dark);">เข้าสู่ระบบ AI Population Health</h2>
+                <p style="margin: 0; color: var(--muted); font-size: 15px;">จัดอันดับผู้ป่วยที่ควรติดตามก่อน พร้อมวิเคราะห์กลุ่มผู้ป่วยด้วย AI เพื่อวางแผนทรัพยากรการแพทย์</p>
             </div>
-        </a>
-    <?php endforeach; ?>
-</section>
+            <div style="margin-left: auto; color: var(--primary); font-size: 24px; font-weight: bold;">›</div>
+        </div>
+    </a>
 
-<section class="grid grid-2 mt-2">
-    <div class="card">
-        <h2>Quick Actions</h2>
-        <p class="text-muted">เมนูลัดสำหรับจัดการผู้ป่วย การรักษา เอกสาร AI และการส่งต่อ</p>
-
-        <div class="document-grid mt-2">
-            <a class="document-card" href="<?= e(app_url('doctor/patient-profile.php')) ?>">
-                <div><strong>ดูข้อมูลผู้ป่วย</strong><span>ค้นหาและดูข้อมูลผู้ป่วย</span></div>
-                <span class="badge blue">Profile</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/register-patient.php')) ?>">
-                <div><strong>ลงทะเบียนผู้ป่วย</strong><span>เพิ่มข้อมูลผู้ป่วยรายใหม่เข้าสู่ระบบ</span></div>
-                <span class="badge green">Register</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/add-treatment.php')) ?>">
-                <div><strong>เพิ่มการรักษา</strong><span>บันทึกผลตรวจ วินิจฉัย และแผนการรักษา</span></div>
-                <span class="badge orange">Treatment</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/referral.php')) ?>">
-                <div><strong>ส่งตัว / ส่งต่อ</strong><span>เลือกแผนก แพทย์ และโรงพยาบาลปลายทาง</span></div>
-                <span class="badge red">Refer</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/population-health.php')) ?>">
-                <div><strong>AI Population Health</strong><span>จัดอันดับผู้ป่วยที่ควรติดตามก่อน พร้อม cohort และ recommendation</span></div>
-                <span class="badge red">AI</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/ems-handover.php')) ?>">
-                <div><strong>EMS MIST/SBAR</strong><span>รับเคสจากรถฉุกเฉิน แยก Medical / Trauma</span></div>
-                <span class="badge orange">EMS</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/prescriptions.php')) ?>">
-                <div><strong>ยา / ใบสั่งยา</strong><span>บันทึกจ่ายยา พิมพ์ใบสั่งยา และ Export Excel</span></div>
-                <span class="badge green">Rx</span>
-            </a>
-            <a class="document-card" href="<?= e(app_url('doctor/progress-note.php')) ?>">
-                <div><strong>Progress Note</strong><span>เปิดดู CC, vital signs, height/weight และ note ล่าสุด</span></div>
-                <span class="badge blue">Note</span>
-            </a>
+    <!-- Stats Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="card" style="padding: 20px;">
+            <span style="color: var(--muted); font-size: 14px;">ผู้ป่วยในระบบ</span>
+            <strong style="display: block; font-size: 32px; color: var(--ink); margin-top: 8px;"><?= e((string)$patientCount) ?></strong>
+        </div>
+        <div class="card" style="padding: 20px;">
+            <span style="color: var(--muted); font-size: 14px;">การเข้าตรวจทั้งหมด</span>
+            <strong style="display: block; font-size: 32px; color: var(--ink); margin-top: 8px;"><?= e((string)$visitCount) ?></strong>
+        </div>
+        <div class="card" style="padding: 20px;">
+            <span style="color: var(--muted); font-size: 14px;">ผู้ป่วยเฝ้าระวังสูง (High Watch)</span>
+            <strong style="display: block; font-size: 32px; color: #e11d48; margin-top: 8px;"><?= e((string)$highRiskCount) ?></strong>
         </div>
     </div>
 
-    <div class="card">
-        <h2>ผู้ป่วย Demo 10 คน</h2>
-        <p class="text-muted">ใช้ HN เหล่านี้ทดสอบระบบได้ รหัสผ่านทุกคนคือ 123456</p>
+    <!-- Two-column main layout -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+        
+        <!-- Left Column: Patient Flow -->
+        <div class="card">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--line);">
+                <h2 style="margin: 0; font-size: 18px; color: var(--ink);">🏥 ปริมาณผู้ป่วยตามจุดบริการ</h2>
+            </div>
+            <div style="padding: 20px; display: grid; gap: 12px;">
+                <?php foreach ($flowSummary as $label => $count): ?>
+                    <a href="<?= e(app_url('doctor/care-list.php?type=' . urlencode(usemed_care_type_key_from_label((string) $label)))) ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; text-decoration: none; color: var(--ink);">
+                        <strong style="font-size: 15px;"><?= e(($flowIcons[$label] ?? '🏥') . ' ' . $label) ?></strong>
+                        <span class="badge" style="background: white; border: 1px solid var(--line);"><?= e((string) $count) ?> ราย</span>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
 
-        <div class="document-grid mt-2">
-            <?php foreach (array_slice($latestPatients, 0, 5) as $p): ?>
-                <?php $risk = (string) ($p['risk_level'] ?? 'Medium'); ?>
-                <a class="document-card" href="<?= e(app_url('doctor/patient-profile.php?hn=' . urlencode((string) ($p['hn'] ?? '')))) ?>">
-                    <div>
-                        <strong><?= e($p['full_name'] ?? '-') ?></strong>
-                        <span><?= e($p['hn'] ?? '-') ?> · <?= e($p['care_area'] ?? 'OPD') ?> · <?= e($p['department'] ?? '-') ?></span>
-                    </div>
-                    <span class="badge <?= e(badge_class($risk)) ?>"><?= e($risk) ?></span>
+        <!-- Right Column: Quick Actions -->
+        <div class="card">
+            <div style="padding: 16px 20px; border-bottom: 1px solid var(--line);">
+                <h2 style="margin: 0; font-size: 18px; color: var(--ink);">⚡ เมนูจัดการด่วน</h2>
+            </div>
+            <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <a href="<?= e(app_url('doctor/register-patient.php')) ?>" class="btn secondary" style="display: block; text-align: left; padding: 12px 16px;">
+                    <strong style="display: block; color: var(--ink); margin-bottom: 4px;">ลงทะเบียนผู้ป่วย</strong>
+                    <small style="color: var(--muted); font-size: 12px;">เพิ่มข้อมูลผู้ป่วยใหม่</small>
                 </a>
-            <?php endforeach; ?>
+                <a href="<?= e(app_url('doctor/add-treatment.php')) ?>" class="btn secondary" style="display: block; text-align: left; padding: 12px 16px;">
+                    <strong style="display: block; color: var(--ink); margin-bottom: 4px;">เพิ่มการรักษา</strong>
+                    <small style="color: var(--muted); font-size: 12px;">บันทึกผลตรวจ/วินิจฉัย</small>
+                </a>
+                <a href="<?= e(app_url('doctor/ems-handover.php')) ?>" class="btn secondary" style="display: block; text-align: left; padding: 12px 16px;">
+                    <strong style="display: block; color: var(--ink); margin-bottom: 4px;">รับเคส EMS</strong>
+                    <small style="color: var(--muted); font-size: 12px;">ส่งมอบ Medical/Trauma</small>
+                </a>
+                <a href="<?= e(app_url('doctor/prescriptions.php')) ?>" class="btn secondary" style="display: block; text-align: left; padding: 12px 16px;">
+                    <strong style="display: block; color: var(--ink); margin-bottom: 4px;">ระบบจ่ายยา</strong>
+                    <small style="color: var(--muted); font-size: 12px;">พิมพ์ใบสั่งยา/Export</small>
+                </a>
+            </div>
         </div>
-    </div>
-</section>
 
-<section class="table-card mt-2">
-    <div class="topbar">
-        <div>
-            <h1>ประวัติการรักษาล่าสุด</h1>
-            <p>รายการ Visit ล่าสุดของผู้ป่วย</p>
+    </div>
+
+    <!-- Recent Visits Table -->
+    <div class="table-card mt-2">
+        <div class="topbar" style="padding: 16px 20px; border-bottom: 1px solid var(--line);">
+            <h2 style="margin: 0; font-size: 18px; color: var(--ink);">ประวัติการรักษาล่าสุด</h2>
         </div>
-        <div class="searchbar"><input type="search" data-table-search="doctorVisits" placeholder="ค้นหาประวัติ..."></div>
-    </div>
-
-    <?php if (empty($visits)): ?>
-        <?php render_empty_state('ยังไม่มีประวัติการรักษา', 'เมื่อมีการบันทึก Visit รายการจะแสดงที่นี่'); ?>
-    <?php else: ?>
         <div class="table-wrap">
-            <table class="table" id="doctorVisits">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>วันที่</th>
                         <th>ผู้ป่วย</th>
                         <th>หัวข้อ</th>
-                        <th>วินิจฉัย/สรุป</th>
                         <th>Risk</th>
-                        <th>ดู</th>
+                        <th style="width: 80px;"></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($visits as $visit): ?>
-                        <?php
-                        $risk = $visit['risk'] ?? $visit['risk_level'] ?? 'Medium';
-                        $date = $visit['date'] ?? $visit['visit_date'] ?? '-';
-                        $patientName = $visit['full_name'] ?? $patient['full_name'];
-                        $hn = $visit['hn'] ?? $patient['hn'];
-                        $summary = $visit['summary'] ?? $visit['diagnosis'] ?? '-';
-                        ?>
-                        <tr>
-                            <td><?= e($date) ?></td>
-                            <td><strong><?= e($patientName) ?></strong><br><span class="text-muted"><?= e($hn) ?></span></td>
-                            <td><?= e($visit['title'] ?? '-') ?></td>
-                            <td><?= e($summary) ?></td>
-                            <td><span class="badge <?= e(badge_class((string) $risk)) ?>"><?= e($risk) ?></span></td>
-                            <td><a class="btn secondary" href="<?= e(app_url('doctor/visit-detail.php')) ?>">เปิด</a></td>
-                        </tr>
-                    <?php endforeach; ?>
+                    <?php if (empty($visits)): ?>
+                        <tr><td colspan="5" style="text-align: center; padding: 24px; color: var(--muted);">ยังไม่มีประวัติการรักษา</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($visits as $visit): ?>
+                            <?php
+                            $risk = $visit['risk'] ?? $visit['risk_level'] ?? 'Medium';
+                            $date = $visit['date'] ?? $visit['visit_date'] ?? '-';
+                            $patientName = $visit['full_name'] ?? $patient['full_name'];
+                            ?>
+                            <tr>
+                                <td><?= e($date) ?></td>
+                                <td><strong style="color: var(--ink);"><?= e($patientName) ?></strong></td>
+                                <td style="color: var(--muted);"><?= e($visit['title'] ?? '-') ?></td>
+                                <td><span class="badge <?= e(badge_class((string) $risk)) ?>"><?= e($risk) ?></span></td>
+                                <td><a class="btn secondary small" href="<?= e(app_url('doctor/visit-detail.php')) ?>">เปิด</a></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
-    <?php endif; ?>
-</section>
-
-<section class="grid grid-2 mt-2">
-    <div class="table-card">
-        <div class="topbar">
-            <div>
-                <h1>รายการส่งต่อ / ส่งตัวล่าสุด</h1>
-                <p>แผนก แพทย์ และโรงพยาบาลปลายทาง</p>
-            </div>
-            <a class="btn" href="<?= e(app_url('doctor/referral.php')) ?>">+ ส่งต่อใหม่</a>
-        </div>
-
-        <div class="document-grid mt-2">
-            <?php foreach (array_slice($referrals, 0, 5) as $ref): ?>
-                <div class="document-card">
-                    <div>
-                        <strong><?= e(($ref['hn'] ?? '-') . ' · ' . ($ref['patient_name'] ?? '-')) ?></strong>
-                        <span><?= e(($ref['to_department'] ?? '-') . ' → ' . ($ref['to_hospital'] ?? '-')) ?></span>
-                    </div>
-                    <span class="badge <?= e(($ref['urgency'] ?? '') === 'ด่วน' ? 'red' : 'blue') ?>"><?= e($ref['status'] ?? 'รอรับเคส') ?></span>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-
-    <div class="card">
-        <h2>บัญชี Demo หมอ 3 คน</h2>
-        <p class="text-muted">รหัสผ่านทุกบัญชี: 123456</p>
-        <div class="document-grid mt-2">
-            <?php foreach (demo_doctors() as $d): ?>
-                <div class="document-card">
-                    <div>
-                        <strong><?= e($d['full_name']) ?></strong>
-                        <span><?= e($d['username']) ?> · <?= e($d['department']) ?> · <?= e($d['hospital']) ?></span>
-                    </div>
-                    <span class="badge green">Doctor</span>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </div>
-</section>
-
-<section class="grid grid-3 mt-2">
-    <a class="card" href="<?= e(app_url('doctor/documents.php')) ?>">
-        <h3>เอกสารผู้ป่วย</h3>
-        <p>ดูผลตรวจ ใบนัด และสรุปการรักษา</p>
-    </a>
-    <a class="card" href="<?= e(app_url('doctor/stat-list.php')) ?>">
-        <h3>สถิติระบบ</h3>
-        <p>ดูรายการสรุปจำนวนผู้ป่วย Visit และเอกสาร</p>
-    </a>
-    <a class="card" href="<?= e(app_url('doctor/icu.php')) ?>">
-        <h3>ICU Monitor</h3>
-        <p>หน้าจำลองติดตามผู้ป่วยวิกฤต</p>
-    </a>
-</section>
-
-<?php page_end();

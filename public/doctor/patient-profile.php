@@ -63,242 +63,169 @@ topbar(
 );
 ?>
 
-<section class="stat-grid">
-    <?php stat_card('HN', $patient['hn'] ?? 'HN0001', 'Patient ID'); ?>
-    <?php stat_card('อายุ', (string) ($patient['age'] ?? '-') . ' ปี', $patient['gender'] ?? '-'); ?>
-    <?php stat_card('Visits', (string) count($visits), 'Treatment'); ?>
-    <?php stat_card('Risk Level', (string) $riskLevel, 'AI Risk'); ?>
-</section>
-
-<section class="grid grid-2">
-    <div class="card">
-        <h2>ค้นหาผู้ป่วย</h2>
-        <p class="text-muted">
-            กรอกเลข HN เพื่อค้นหาข้อมูลผู้ป่วยในระบบ
-        </p>
-
-        <form method="get" class="mt-2">
-            <div class="field">
-                <label for="hn">เลข HN</label>
-                <input
-                    id="hn"
-                    name="hn"
-                    type="text"
-                    value="<?= e($hn) ?>"
-                    placeholder="เช่น HN0001"
-                >
+<div style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
+    
+    <!-- Top Header & Search -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; align-items: start;">
+        <div class="card" style="padding: 24px; border-left: 6px solid var(--primary);">
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; font-size: 28px; border: 2px solid var(--primary);">
+                    👤
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                        <h1 style="margin: 0; font-size: 24px; color: var(--ink);"><?= e($patient['full_name'] ?? 'ไม่พบชื่อผู้ป่วย') ?></h1>
+                        <span class="badge <?= e($riskBadge) ?>"><?= e($riskLevel) ?> Risk</span>
+                    </div>
+                    <div style="color: var(--muted); display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px;">
+                        <span><strong>HN:</strong> <?= e($patient['hn'] ?? 'HN0001') ?></span>
+                        <span><strong>อายุ:</strong> <?= e($patient['age'] ?? '-') ?> ปี</span>
+                        <span><strong>เพศ:</strong> <?= e($patient['gender'] ?? '-') ?></span>
+                        <span><strong>เบอร์โทร:</strong> <?= e($patient['phone'] ?? '-') ?></span>
+                    </div>
+                    <div style="margin-top: 12px; font-size: 14px;">
+                        <span style="color: var(--ink);"><strong>โรคประจำตัว:</strong> <?= e($patient['disease'] ?? 'ไม่มีโรคประจำตัว') ?></span>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div class="btn-row">
-                <button class="btn" type="submit">ค้นหาผู้ป่วย</button>
-                <a class="btn secondary" href="<?= e(app_url('doctor/register-patient.php')) ?>">
-                    ลงทะเบียนผู้ป่วยใหม่
-                </a>
+        <div class="card" style="padding: 24px;">
+            <h2 style="margin: 0 0 16px; font-size: 16px; color: var(--ink);">ค้นหาผู้ป่วยอื่น</h2>
+            <form method="get" style="display: flex; gap: 8px;">
+                <input type="text" name="hn" value="<?= e($hn) ?>" placeholder="กรอกเลข HN..." style="flex: 1; padding: 10px; border: 1px solid var(--line); border-radius: 8px;">
+                <button class="btn" type="submit">ค้นหา</button>
+            </form>
+            <div style="margin-top: 16px; text-align: right;">
+                <a href="<?= e(app_url('doctor/register-patient.php')) ?>" style="color: var(--primary); font-size: 14px; text-decoration: none;">+ ลงทะเบียนผู้ป่วยใหม่</a>
             </div>
-        </form>
-
-        <div class="note-box mt-2">
-            Demo HN: <strong>HN0001</strong>
         </div>
     </div>
 
-    <div class="card">
-        <h2>ข้อมูลส่วนตัว</h2>
-
-        <div class="document-grid mt-2">
-            <div class="document-card">
-                <div>
-                    <strong><?= e($patient['full_name'] ?? '-') ?></strong>
-                    <span>HN: <?= e($patient['hn'] ?? '-') ?></span>
-                </div>
-                <span class="badge <?= e($riskBadge) ?>"><?= e($riskLevel) ?></span>
-            </div>
-
-            <div class="document-card">
-                <div>
-                    <strong>อายุ / เพศ</strong>
-                    <span><?= e($patient['age'] ?? '-') ?> ปี / <?= e($patient['gender'] ?? '-') ?></span>
-                </div>
-                <span class="badge blue">Profile</span>
-            </div>
-
-            <div class="document-card">
-                <div>
-                    <strong>เบอร์โทร</strong>
-                    <span><?= e($patient['phone'] ?? '-') ?></span>
-                </div>
-                <span class="badge green">Contact</span>
-            </div>
-
-            <div class="document-card">
-                <div>
-                    <strong>โรคประจำตัว</strong>
-                    <span><?= e($patient['disease'] ?? '-') ?></span>
-                </div>
-                <span class="badge red">Chronic</span>
-            </div>
-
-            <div class="document-card">
-                <div>
-                    <strong>ที่อยู่</strong>
-                    <span><?= e($patient['address'] ?? '-') ?></span>
-                </div>
-                <span class="badge orange">Address</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="grid grid-3 mt-2">
-    <a class="card" href="<?= e(app_url('doctor/add-treatment.php')) ?>">
-        <h3>เพิ่มการรักษา</h3>
-        <p>บันทึก Visit ใหม่ วินิจฉัย แผนรักษา และค่า Lab</p>
-    </a>
-
-    <a class="card" href="<?= e(app_url('doctor/ai-risk.php')) ?>">
-        <h3>AI Risk</h3>
-        <p>ประเมินความเสี่ยงจากข้อมูลสุขภาพผู้ป่วย</p>
-    </a>
-
-    <a class="card" href="<?= e(app_url('doctor/documents.php')) ?>">
-        <h3>เอกสารผู้ป่วย</h3>
-        <p>ดูผลตรวจ ใบนัด และสรุปการรักษา</p>
-    </a>
-</section>
-
-<section class="table-card mt-2">
-    <div class="topbar">
-        <div>
-            <h1>ประวัติการรักษา</h1>
-            <p>Visit ล่าสุดของผู้ป่วยรายนี้</p>
-        </div>
-
-        <div class="searchbar">
-            <input
-                type="search"
-                data-table-search="patientVisitTable"
-                placeholder="ค้นหาประวัติ..."
-            >
-        </div>
-    </div>
-
-    <?php if (empty($visits)): ?>
-        <?php render_empty_state('ยังไม่มีประวัติการรักษา', 'เมื่อแพทย์เพิ่มการรักษา รายการจะแสดงที่นี่'); ?>
-    <?php else: ?>
-        <div class="table-wrap">
-            <table class="table" id="patientVisitTable">
-                <thead>
-                    <tr>
-                        <th>วันที่</th>
-                        <th>หัวข้อ</th>
-                        <th>แพทย์</th>
-                        <th>สรุป / วินิจฉัย</th>
-                        <th>Risk</th>
-                        <th>เปิด</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($visits as $visit): ?>
-                        <?php
-                        $date = $visit['date'] ?? $visit['visit_date'] ?? '-';
-                        $title = $visit['title'] ?? '-';
-                        $doctorName = $visit['doctor'] ?? $visit['doctor_name'] ?? 'นพ.กิตติ ภัทรเวช';
-                        $summary = $visit['summary'] ?? $visit['diagnosis'] ?? '-';
-                        $risk = $visit['risk'] ?? $visit['risk_level'] ?? 'Medium';
-                        $badge = badge_class((string) $risk);
-                        ?>
-                        <tr>
-                            <td><?= e($date) ?></td>
-                            <td><?= e($title) ?></td>
-                            <td><?= e($doctorName) ?></td>
-                            <td><?= e($summary) ?></td>
-                            <td>
-                                <span class="badge <?= e($badge) ?>">
-                                    <?= e($risk) ?>
-                                </span>
-                            </td>
-                            <td>
-                                <a class="btn secondary" href="<?= e(app_url('doctor/visit-detail.php')) ?>">
-                                    เปิด
-                                </a>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    <?php endif; ?>
-</section>
-
-<section class="grid grid-2 mt-2">
-    <div class="card">
-        <h2>เอกสารล่าสุด</h2>
-
-        <?php if (empty($documents)): ?>
-            <?php render_empty_state('ยังไม่มีเอกสาร', 'เมื่อมีการสร้างเอกสาร รายการจะแสดงที่นี่'); ?>
-        <?php else: ?>
-            <div class="document-grid mt-2">
-                <?php foreach ($documents as $doc): ?>
-                    <?php
-                    $docId = (int) ($doc['id'] ?? 1);
-                    $docTitle = $doc['title'] ?? 'เอกสารสุขภาพ';
-                    $docType = $doc['document_type'] ?? $doc['type'] ?? 'PDF';
-                    $docDate = $doc['created_at'] ?? $doc['date'] ?? '-';
-                    ?>
-                    <a class="document-card" href="<?= e(app_url('doctor/document-view.php?id=' . $docId)) ?>">
-                        <div>
-                            <strong><?= e($docTitle) ?></strong>
-                            <span><?= e($docDate) ?></span>
-                        </div>
-                        <span class="badge blue"><?= e($docType) ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <div class="risk-card">
-        <div class="risk-score">
+    <!-- Quick Actions -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+        <a href="<?= e(app_url('doctor/add-treatment.php?hn=' . urlencode($hn))) ?>" class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
+            <div style="font-size: 24px;">🩺</div>
             <div>
-                <span class="badge <?= e($riskBadge) ?>">
-                    Risk <?= e($riskLevel) ?>
-                </span>
-
-                <h2 style="margin:12px 0 6px;">
-                    สถานะความเสี่ยงล่าสุด
-                </h2>
-
-                <p class="text-muted">
-                    อ้างอิงจาก Visit ล่าสุดหรือข้อมูล Demo ของผู้ป่วย
-                </p>
+                <strong style="display: block; color: var(--ink); margin-bottom: 4px;">เพิ่มการรักษาใหม่</strong>
+                <span style="color: var(--muted); font-size: 13px;">บันทึก Visit และวินิจฉัย</span>
             </div>
-
-            <div class="score-circle" style="--value:62">
-                <strong><?= e($latestVisit['risk_score'] ?? 62) ?></strong>
+        </a>
+        <a href="<?= e(app_url('doctor/prescriptions.php?hn=' . urlencode($hn))) ?>" class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
+            <div style="font-size: 24px;">💊</div>
+            <div>
+                <strong style="display: block; color: var(--ink); margin-bottom: 4px;">สั่งยา / ใบสั่งยา</strong>
+                <span style="color: var(--muted); font-size: 13px;">จัดการรายการยาผู้ป่วย</span>
             </div>
-        </div>
-
-        <div class="mt-2">
-            <div class="riskbar">
-                <span style="width:<?= e($latestVisit['risk_score'] ?? 62) ?>%"></span>
+        </a>
+        <a href="<?= e(app_url('doctor/referral.php?hn=' . urlencode($hn))) ?>" class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
+            <div style="font-size: 24px;">🚑</div>
+            <div>
+                <strong style="display: block; color: var(--ink); margin-bottom: 4px;">ส่งต่อ / ส่งตัว</strong>
+                <span style="color: var(--muted); font-size: 13px;">ทำเรื่องส่งผู้ป่วยไปแผนกอื่น</span>
             </div>
-        </div>
-
-        <ul class="factor-list">
-            <li>โรคประจำตัว: <?= e($patient['disease'] ?? '-') ?></li>
-            <li>ติดตามประวัติการรักษา <?= e(count($visits)) ?> รายการ</li>
-            <li>มีเอกสารสุขภาพ <?= e(count($documents)) ?> รายการ</li>
-        </ul>
-
-        <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border);">
-        <h3 style="margin-bottom: 8px;">🤖 AI Predictive Insights</h3>
-        <canvas id="aiTrajectoryChart" style="max-height: 200px;"></canvas>
-        <div class="note-box mt-2" style="background: var(--bg-hover);">
-            <strong>💡 Recommendation:</strong><br>
-            <span id="aiMedRec">กำลังวิเคราะห์ข้อมูล Longitudinal...</span>
-        </div>
+        </a>
     </div>
-</section>
+
+    <!-- Main Content Split -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+        
+        <!-- Left Column: Visit History & Documents -->
+        <div>
+            <!-- Visits -->
+            <div class="table-card" style="margin-bottom: 24px;">
+                <div style="padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; font-size: 18px; color: var(--ink);">ประวัติการรักษา</h2>
+                    <span style="color: var(--muted); font-size: 14px;"><?= e((string)count($visits)) ?> รายการ</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>วันที่</th>
+                                <th>หัวข้อ / วินิจฉัย</th>
+                                <th>แพทย์</th>
+                                <th style="width: 80px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($visits)): ?>
+                                <tr><td colspan="4" style="text-align: center; padding: 24px; color: var(--muted);">ยังไม่มีประวัติการรักษา</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($visits as $visit): ?>
+                                    <?php
+                                    $date = $visit['date'] ?? $visit['visit_date'] ?? '-';
+                                    $title = $visit['title'] ?? '-';
+                                    $summary = $visit['summary'] ?? $visit['diagnosis'] ?? '-';
+                                    $doctorName = $visit['doctor'] ?? $visit['doctor_name'] ?? 'นพ.กิตติ';
+                                    ?>
+                                    <tr>
+                                        <td><?= e($date) ?></td>
+                                        <td>
+                                            <strong style="color: var(--ink); display: block; margin-bottom: 4px;"><?= e($title) ?></strong>
+                                            <span style="color: var(--muted); font-size: 13px;"><?= e($summary) ?></span>
+                                        </td>
+                                        <td style="color: var(--muted);"><?= e($doctorName) ?></td>
+                                        <td><a class="btn secondary small" href="<?= e(app_url('doctor/visit-detail.php')) ?>">เปิด</a></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="card">
+                <div style="padding: 16px 24px; border-bottom: 1px solid var(--line);">
+                    <h2 style="margin: 0; font-size: 18px; color: var(--ink);">เอกสารสุขภาพ</h2>
+                </div>
+                <div style="padding: 0;">
+                    <?php if (empty($documents)): ?>
+                        <div style="text-align: center; padding: 24px; color: var(--muted);">ยังไม่มีเอกสาร</div>
+                    <?php else: ?>
+                        <?php foreach ($documents as $doc): ?>
+                            <?php
+                            $docId = (int) ($doc['id'] ?? 1);
+                            $docTitle = $doc['title'] ?? 'เอกสารสุขภาพ';
+                            $docType = $doc['document_type'] ?? $doc['type'] ?? 'PDF';
+                            $docDate = $doc['created_at'] ?? $doc['date'] ?? '-';
+                            ?>
+                            <a href="<?= e(app_url('doctor/document-view.php?id=' . $docId)) ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); text-decoration: none;">
+                                <div>
+                                    <strong style="display: block; color: var(--ink); margin-bottom: 4px;"><?= e($docTitle) ?></strong>
+                                    <span style="color: var(--muted); font-size: 13px;"><?= e($docDate) ?></span>
+                                </div>
+                                <span class="badge blue"><?= e($docType) ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: AI Risk -->
+        <div class="card" style="background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%); border: 1px solid var(--line);">
+            <div style="padding: 20px; border-bottom: 1px solid var(--line); text-align: center;">
+                <span class="badge <?= e($riskBadge) ?>" style="margin-bottom: 12px;">Risk <?= e($riskLevel) ?></span>
+                <h2 style="margin: 0 0 8px; font-size: 18px; color: var(--ink);">ระดับความเสี่ยงล่าสุด</h2>
+                <div class="score-circle" style="--value:<?= e($latestVisit['risk_score'] ?? 62) ?>; margin: 16px auto;">
+                    <strong><?= e($latestVisit['risk_score'] ?? 62) ?></strong>
+                </div>
+                <div class="riskbar mt-2"><span style="width:<?= e($latestVisit['risk_score'] ?? 62) ?>%"></span></div>
+            </div>
+            <div style="padding: 20px;">
+                <h3 style="margin: 0 0 12px; font-size: 15px; color: var(--ink);">🤖 AI Predictive Insights</h3>
+                <canvas id="aiTrajectoryChart" style="max-height: 180px; width: 100%; margin-bottom: 16px;"></canvas>
+                <div style="background: var(--bg-hover); padding: 12px; border-radius: 8px; font-size: 13px; color: var(--ink); line-height: 1.5;">
+                    <strong style="color: var(--primary-dark);">💡 Recommendation:</strong><br>
+                    <span id="aiMedRec">กำลังวิเคราะห์ข้อมูล Longitudinal...</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
 
 <?php
 page_end();

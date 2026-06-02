@@ -475,171 +475,22 @@ $p3 = count(array_filter($assessments, fn($a) => $a['priority'] === 'P3'));
 $avgRisk = $total ? round(array_sum(array_map(fn($a) => (int) $a['score'], $assessments)) / $total, 1) : 0;
 $ipdIcu = count(array_filter($filtered, fn($p) => in_array(($p['care_area'] ?? 'OPD'), ['IPD', 'ICU'], true)));
 $needCall = count(array_filter($filtered, fn($p) => in_array(phm_assessment($p)['priority'], ['P1', 'P2'], true)));
-$needLab = count(array_filter($filtered, function ($p) {
-    $a = phm_assessment($p);
-    $tags = (array)($a['cohort_tags'] ?? []);
-    return in_array('เบาหวาน', $tags, true) || in_array('ความดัน', $tags, true) || in_array('ไต', $tags, true);
-}));
-$needNcd = count(array_filter($filtered, function ($p) {
-    $tags = (array)(phm_assessment($p)['cohort_tags'] ?? []);
-    return in_array('เบาหวาน', $tags, true) || in_array('ความดัน', $tags, true) || ((float)(phm_assessment($p)['features']['bmi'] ?? 0) >= 25);
-}));
-$needRefer = count(array_filter($filtered, fn($p) => phm_assessment($p)['priority'] === 'P1' || ($p['care_area'] ?? '') === 'ICU'));
+$queueItems = array_slice($filtered, 0, 100);
 
-$cohortLabels = [
-    'all' => 'ทั้งหมด',
-    'diabetes' => 'เบาหวาน',
-    'hypertension' => 'ความดัน/ไต',
-    'dmht' => 'เบาหวาน+ความดัน',
-    'high' => 'เสี่ยงสูง',
-    'elderly' => 'อายุ 60+',
-    'bmi' => 'BMI สูง',
-    'ipdicu' => 'IPD/ICU',
-    'missed' => 'ขาดนัด',
-];
-
-$openTasks = count(array_filter($filtered, fn($p) => in_array(phm_assessment($p)['priority'], ['P1', 'P2'], true)));
-
-page_start('Population Health', 'doctor', 'population-health');
+page_start('Population Health', 'doctor', 'dashboard');
 ?>
-<section class="phm-pro-page">
-    <section class="phm-pro-hero">
-        <div class="hero-spark">✦</div>
-        <div>
-            <h1>AI Population Health Management</h1>
-            <p>ศูนย์ปฏิบัติการข้อมูลประชากรสุขภาพโรงพยาบาล</p>
-            <span>ใช้ AI วิเคราะห์ข้อมูลผู้ป่วย เพื่อจัดลำดับความสำคัญ วางแผนทรัพยากร และติดตามผลลัพธ์เชิงรุก</span>
+<div style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
+    
+    <div class="card" style="padding: 24px; margin-bottom: 24px; border-left: 6px solid var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin: 0 0 8px; font-size: 28px; color: var(--ink);">AI Population Health</h1>
+                <p style="margin: 0; color: var(--muted); font-size: 16px;">ศูนย์ปฏิบัติการข้อมูลประชากรสุขภาพ จัดลำดับความสำคัญผู้ป่วยด้วย AI</p>
+            </div>
+            <a href="dashboard.php" class="btn secondary">กลับหน้าหลัก</a>
         </div>
-        <div class="phm-hospital-art"><strong>AI</strong></div>
-    </section>
+    </div>
 
-    <section class="phm-kpi-row phm-kpi-clickable">
-        <a class="phm-kpi-card purple" href="<?= e(app_url('doctor/population-health.php#all-patients')) ?>"><span><?= icon_svg('users') ?></span><small>ผู้ป่วยทั้งหมด</small><strong><?= e(number_format($totalAll)) ?></strong><em>กดดูรายชื่อทั้งหมด</em></a>
-        <a class="phm-kpi-card pink" href="<?= e(app_url('doctor/population-health.php?priority=P1#queue')) ?>"><span><?= icon_svg('help') ?></span><small>เร่งด่วน P1</small><strong><?= e((string)$p1) ?></strong><em>ดูแลภายใน 7 วัน</em></a>
-        <a class="phm-kpi-card orange" href="<?= e(app_url('doctor/population-health.php?priority=P2#queue')) ?>"><span><?= icon_svg('calendar') ?></span><small>ติดตาม P2</small><strong><?= e((string)$p2) ?></strong><em>ภายใน 30 วัน</em></a>
-        <a class="phm-kpi-card blue" href="<?= e(app_url('doctor/population-health.php?cohort=high#queue')) ?>"><span><?= icon_svg('icu') ?></span><small>กลุ่มเสี่ยงสูง</small><strong><?= e((string)$avgRisk) ?></strong><em>คะแนนเฉลี่ย /100</em></a>
-        <a class="phm-kpi-card green" href="#outcome"><span><?= icon_svg('assessment') ?></span><small>งานที่ต้องดำเนินการ</small><strong><?= e((string)$openTasks) ?></strong><em>กดดูสถานะงาน</em></a>
-        <a class="phm-dashboard-link" href="#queue"><span><?= icon_svg('dashboard') ?></span><b>ภาพรวม</b><small>Dashboard ›</small></a>
-    </section>
-
-    <section class="phm-question-strip">
-        <h2>วันนี้ควรดูใครก่อน เพราะอะไร และต้องทำอะไรต่อ</h2>
-        <div class="phm-guide-grid">
-            <div><span><?= icon_svg('users') ?></span><b>ใครควรดู</b><small>กลุ่มผู้ป่วย/รายบุคคล</small></div>
-            <div><span><?= icon_svg('icu') ?></span><b>ทำไมต้องดู</b><small>เหตุผล/ปัจจัยเสี่ยง</small></div>
-            <div><span><?= icon_svg('assessment') ?></span><b>ทำอะไรต่อ</b><small>การดำเนินงานที่แนะนำ</small></div>
-            <div><span><?= icon_svg('calendar') ?></span><b>ภายในเมื่อไหร่</b><small>กำหนดเวลา</small></div>
-            <div><span><?= icon_svg('patient') ?></span><b>ใครรับผิดชอบ</b><small>ผู้รับผิดชอบ</small></div>
-            <div><span><?= icon_svg('settings') ?></span><b>สถานะปัจจุบัน</b><small>ความคืบหน้า</small></div>
-        </div>
-    </section>
-
-    <section class="phm-filter-glass">
-        <form method="get" class="phm-filter-inline">
-            <select name="cohort"><?php foreach ($cohortLabels as $key => $label): ?><option value="<?= e($key) ?>" <?= $filters['cohort'] === $key ? 'selected' : '' ?>><?= e($label) ?></option><?php endforeach; ?></select>
-            <select name="priority"><option value="all">ทุก Priority</option><option value="P1" <?= $filters['priority'] === 'P1' ? 'selected' : '' ?>>P1 เร่งด่วน</option><option value="P2" <?= $filters['priority'] === 'P2' ? 'selected' : '' ?>>P2 ติดตาม</option><option value="P3" <?= $filters['priority'] === 'P3' ? 'selected' : '' ?>>P3 ตามรอบ</option></select>
-            <select name="age"><option value="all">ทุกช่วงอายุ</option><option value="0-39" <?= $filters['age'] === '0-39' ? 'selected' : '' ?>>ต่ำกว่า 40</option><option value="40-59" <?= $filters['age'] === '40-59' ? 'selected' : '' ?>>40–59</option><option value="60+" <?= $filters['age'] === '60+' ? 'selected' : '' ?>>60+</option></select>
-            <select name="gender"><option value="all">ทุกเพศ</option><option value="ชาย" <?= $filters['gender'] === 'ชาย' ? 'selected' : '' ?>>ชาย</option><option value="หญิง" <?= $filters['gender'] === 'หญิง' ? 'selected' : '' ?>>หญิง</option></select>
-            <select name="area"><option value="all">ทุกพื้นที่</option><?php foreach (['OPD','IPD','ICU','ผ่าตัด','คิวผ่าตัด'] as $area): ?><option value="<?= e($area) ?>" <?= $filters['area'] === $area ? 'selected' : '' ?>><?= e($area) ?></option><?php endforeach; ?></select>
-            <button class="btn" type="submit">กรอง</button>
-        </form>
-        <small>กำลังแสดง <?= e((string)$total) ?> คน จากทั้งหมด <?= e((string)$totalAll) ?> คน</small>
-    </section>
-
-    <section class="phm-main-grid">
-        <article id="queue" class="phm-panel phm-queue-panel phm-readable-queue">
-            <div class="phm-panel-head">
-                <div><span>1. Priority Follow-up Queue</span><h2>เรียงตามความเร่งด่วนและคะแนนเสี่ยง</h2></div>
-                <a href="#all-patients">ดูทั้งหมด ›</a>
-            </div>
-            <div class="phm-queue-list">
-                <?php foreach ($queueItems as $index => $p): ?>
-                    <?php
-                        $a = phm_assessment($p);
-                        $task = phm_task_for_patient($p);
-                        $hn = phm_text($p, 'hn');
-                        $status = phm_status_text($task);
-                        $owner = $task['assigned_to'] ?? phm_default_owner($p, $a);
-                        $due = phm_due_text($task, $a);
-                        $reason = (string)($a['reasons_detail'][0]['text'] ?? 'ไม่มีสัญญาณเสี่ยงเด่น');
-                        $action = (string)($a['actions'][0] ?? 'ติดตามตามรอบ');
-                        $scoreClass = (int)$a['score'] >= 70 ? 'high' : ((int)$a['score'] >= 45 ? 'mid' : 'low');
-                    ?>
-                    <article class="queue-card priority-<?= e(strtolower($a['priority'])) ?>">
-                        <div class="queue-rank">#<?= e((string)($index + 1)) ?></div>
-                        <div class="queue-person">
-                            <b><?= e(initials(phm_text($p, 'full_name'))) ?></b>
-                            <div>
-                                <strong><?= e(phm_text($p, 'full_name')) ?></strong>
-                                <small><?= e($hn) ?> · อายุ <?= e(phm_text($p, 'age')) ?> ปี · <?= e(phm_text($p, 'care_area', 'OPD')) ?></small>
-                            </div>
-                        </div>
-                        <div class="queue-score <?= e($scoreClass) ?>"><strong><?= e((string)$a['score']) ?></strong><small>/100</small></div>
-                        <span class="priority-badge <?= e(strtolower($a['priority'])) ?>"><?= e($a['priority']) ?> · <?= e($a['level']) ?></span>
-                        <div class="queue-info reason"><small>เพราะอะไร</small><strong><?= e(mb_strimwidth($reason, 0, 86, '...', 'UTF-8')) ?></strong><em><?= e(phm_text($p, 'disease')) ?></em></div>
-                        <div class="queue-info action"><small>ต้องทำอะไรต่อ</small><strong><?= e(mb_strimwidth($action, 0, 82, '...', 'UTF-8')) ?></strong><em><?= e($a['sla']) ?></em></div>
-                        <div class="queue-meta due"><small>ภายใน</small><strong><?= e($due) ?></strong></div>
-                        <div class="queue-meta owner"><small>ผู้รับผิดชอบ</small><strong><?= e((string)$owner) ?></strong></div>
-                        <div class="queue-status"><small>สถานะ</small><span class="status-chip <?= e($status === 'รอดำเนินการ' || $status === 'รอติดตาม' ? 'danger' : 'ok') ?>"><?= e($status) ?></span></div>
-                        <a class="queue-open" href="<?= e(app_url('doctor/add-treatment.php?hn=' . urlencode($hn))) ?>">ติดตามเคส ›</a>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-        </article>
-
-        <article id="cohort" class="phm-panel phm-cohort-panel">
-            <div class="phm-panel-head"><div><span>2. Cohort Comparison</span><h2>เปรียบเทียบกลุ่มผู้ป่วย</h2></div><a href="#cohort-detail">ดูทั้งหมด ›</a></div>
-            <div class="phm-cohort-mini-grid">
-                <?php foreach (array_slice($cohortStats, 0, 6) as $i => $cs): ?>
-                    <div class="cohort-tile tone-<?= e((string)($i % 6)) ?>"><span><?= icon_svg($i % 2 ? 'assessment' : 'users') ?></span><strong><?= e($cs['label']) ?></strong><b><?= e(number_format((int)$cs['count'])) ?> คน</b><small>Avg Risk <?= e($cs['hba1c_avg'] !== '-' ? $cs['hba1c_avg'] : $cs['p1_percent']) ?></small></div>
-                <?php endforeach; ?>
-            </div>
-        </article>
-    </section>
-
-    <section class="phm-bottom-grid">
-        <article id="trajectory" class="phm-panel phm-trajectory-panel">
-            <div class="phm-panel-head"><div><span>3. Health Trajectory</span><h2>แนวโน้มสุขภาพที่ต้องเฝ้าดู</h2></div><a href="#all-patients">ดูผู้ป่วย ›</a></div>
-            <div class="trajectory-mini-grid trajectory-polished">
-                <?php
-                $metricCards = [
-                    ['HbA1c เฉลี่ย', '8.2%', 'ลดลง 0.4%', 'purple', [8.8, 8.5, 8.7, 8.3, 8.2]],
-                    ['ความดันเฉลี่ย', '138/86', 'ลดลง 5/3', 'pink', [148, 145, 150, 142, 138]],
-                    ['น้ำหนักเฉลี่ย', '72.1 kg', 'ลดลง 1.2 kg', 'green', [73.6, 73.1, 72.8, 72.6, 72.1]],
-                    ['ขาดนัด 3 เดือน', (string)($cohortStats[9]['count'] ?? 0), 'ลดลง 18 ราย', 'blue', [260, 238, 245, 224, (float)($cohortStats[9]['count'] ?? 212)]],
-                ];
-                foreach ($metricCards as $m): ?>
-                    <div class="trajectory-card <?= e($m[3]) ?>">
-                        <div class="trajectory-top"><small><?= e($m[0]) ?></small><strong><?= e($m[1]) ?></strong><em><?= e($m[2]) ?></em></div>
-                        <?= phm_sparkline_svg($m[4], $m[3]) ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </article>
-
-        <article id="resource" class="phm-panel">
-            <div class="phm-panel-head"><div><span>4. Hospital Impact</span><h2>Resource Planning</h2></div><a href="#">ดูทั้งหมด ›</a></div>
-            <div class="resource-mini-grid">
-                <div><small>คาดการณ์ภาระงาน</small><strong>↑ 12%</strong><span>เทียบเดือนก่อน</span></div>
-                <div><small>ICU/High-watch Need</small><strong><?= e((string)$ipdIcu) ?> คน</strong><span>คาดการณ์ 7 วัน</span></div>
-                <div><small>Lab Demand</small><strong>↑ <?= e((string)$needLab) ?></strong><span>คนควรตรวจ</span></div>
-                <div><small>ทรัพยากรแนะนำ</small><strong>เพิ่มทีมติดตาม</strong><span><?= e((string)max(1, ceil($needCall / 30))) ?> คน</span></div>
-            </div>
-        </article>
-
-        <article id="outcome" class="phm-panel outcome-panel">
-            <div class="phm-panel-head"><div><span>5. Outcome Tracking</span><h2>ติดตามผลลัพธ์</h2></div><a href="#">ดูทั้งหมด ›</a></div>
-            <div class="outcome-flow">
-                <?php
-                $flow = [
-                    ['ยังไม่ติดตาม', $outcomeOpen ?: $p1, 'danger', 'help'],
-                    ['โทรแล้ว', $taskCounts['โทรแล้ว'] ?? 0, 'orange', 'message'],
-                    ['นัดแล้ว', $taskCounts['นัดแล้ว'] ?? 0, 'green', 'calendar'],
-                    ['มาตามนัดแล้ว', $taskCounts['มาตามนัดแล้ว'] ?? 0, 'blue', 'assessment'],
-                    ['ส่งต่อแล้ว', $taskCounts['ส่งต่อแล้ว'] ?? 0, 'purple', 'transfer'],
-                    ['ปิดเคสแล้ว', $taskCounts['ปิดเคสแล้ว'] ?? 0, 'teal', 'settings'],
-                ];
-                foreach ($flow as $step): ?>
                     <div class="outcome-step <?= e($step[2]) ?>"><span><?= icon_svg($step[3]) ?></span><small><?= e($step[0]) ?></small><strong><?= e((string)$step[1]) ?></strong></div>
                 <?php endforeach; ?>
             </div>
