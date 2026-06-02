@@ -1,6 +1,7 @@
 .agents
 backend/config/local.php
 backend/config.local.php
+.impeccable
 
 # Python/runtime cache
 __pycache__/

@@ -109,10 +109,7 @@ $careStatus = $riskScore >= 75 ? 'ต้องติดตามใกล้ช�
 $medTitle = str_contains(mb_strtolower((string)($patient['disease'] ?? ''), 'UTF-8'), 'diabetes') || str_contains((string)($patient['disease'] ?? ''), 'เบาหวาน') ? 'ยาควบคุมน้ำตาล' : 'ยาประจำตัว';
 ?>
 
-<style>
-/* STEP23 patient quick service fix: keep text horizontal and readable */
-.patient-premium-page{display:grid!important;gap:18px!important}.quick-service-section{padding:20px!important;border-radius:24px!important;overflow:hidden!important}.quick-service-grid{display:grid!important;grid-template-columns:repeat(2,minmax(320px,1fr))!important;gap:12px!important}.quick-service-grid a{display:grid!important;grid-template-columns:42px minmax(0,1fr) 20px!important;grid-template-areas:"icon title arrow" "icon desc arrow"!important;align-items:center!important;gap:3px 12px!important;min-width:0!important;min-height:78px!important;padding:15px 17px!important;border-radius:18px!important;overflow:hidden!important;background:#fff!important}.quick-service-grid a>span{grid-area:icon!important;width:42px!important;height:42px!important;border-radius:15px!important;display:grid!important;place-items:center!important}.quick-service-grid a>span svg{width:18px!important;height:18px!important}.quick-service-grid a>strong{grid-area:title!important;display:block!important;font-size:16px!important;line-height:1.25!important;white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important}.quick-service-grid a>small{grid-area:desc!important;display:block!important;font-size:12.5px!important;line-height:1.3!important;white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important;color:#64748b!important}.quick-service-grid a>i{grid-area:arrow!important;display:block!important;font-size:22px!important;line-height:1!important;justify-self:end!important;color:#3345c7!important}.quick-service-grid *{writing-mode:horizontal-tb!important;text-orientation:mixed!important}.quick-service-grid br{display:none!important}@media(max-width:1100px){.quick-service-grid{grid-template-columns:1fr!important}}
-</style>
+
 
 
 <section class="patient-premium-page">

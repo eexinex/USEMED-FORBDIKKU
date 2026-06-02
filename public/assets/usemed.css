@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
 :root {
   --bg: #f4fbfa;
   --bg2: #eef7ff;
@@ -23,8 +25,8 @@
   --green: #10b981;
   --green-soft: #ecfdf5;
 
-  --shadow: 0 22px 60px rgba(8, 72, 63, 0.14);
-  --shadow-soft: 0 10px 28px rgba(8, 72, 63, 0.09);
+  --shadow: 0 4px 12px rgba(8, 72, 63, 0.08);
+  --shadow-soft: 0 2px 6px rgba(8, 72, 63, 0.04);
 
   --radius: 22px;
   --sidebar: 280px;
@@ -41,13 +43,12 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Segoe UI", "Noto Sans Thai", Tahoma, Arial, sans-serif;
+  font-family: "Inter", "IBM Plex Sans Thai", "Segoe UI", "Noto Sans Thai", Tahoma, sans-serif;
   color: var(--ink);
-  background:
-    radial-gradient(circle at top left, rgba(15, 159, 133, 0.22), transparent 34%),
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.13), transparent 34%),
-    linear-gradient(135deg, var(--bg), var(--bg2));
+  background: var(--bg);
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -132,9 +133,7 @@ body > form input[type="submit"] {
   height: 100vh;
   padding: 22px;
   color: #fff;
-  background:
-    radial-gradient(circle at top left, rgba(125, 248, 214, 0.22), transparent 36%),
-    linear-gradient(180deg, #06483e 0%, #087662 58%, #053c35 100%);
+  background: var(--ink);
   box-shadow: 22px 0 50px rgba(5, 60, 53, 0.18);
   overflow-y: auto;
 }
@@ -602,9 +601,7 @@ body > form input[type="submit"] {
   position: relative;
   padding: 44px;
   color: #fff;
-  background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.20), transparent 34%),
-    linear-gradient(135deg, #075448, var(--primary));
+  background: var(--primary-dark);
   overflow: hidden;
 }
 
@@ -711,7 +708,13 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: #80dfce;
-  box-shadow: 0 0 0 5px rgba(15, 159, 133, 0.11);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(15, 159, 133, 0.2);
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .demo-box,
