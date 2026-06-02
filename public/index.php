@@ -57,7 +57,7 @@ page_start('USE MED', 'guest');
     </div>
 
     <footer style="margin-top: 60px; text-align: center; font-size: 14px; color: var(--muted);">
-        <p>© <?= date('Y') ?> USE MED. Created by <strong>ธัญญชล จำปาศักดิ์</strong>. All rights reserved.</p>
+        <p>© <?= date('Y') ?> USE MED. Created by <strong>ทีม KKU Is not here</strong>. All rights reserved.</p>
         <div style="display: flex; gap: 16px; justify-content: center; margin-top: 12px;">
             <?php if (file_ok('about.php')): ?><a href="about.php" style="color: var(--primary); text-decoration: none; font-weight: bold;">About</a><?php endif; ?>
             <?php if (file_ok('support.php')): ?><a href="support.php" style="color: var(--primary); text-decoration: none; font-weight: bold;">Support</a><?php endif; ?>

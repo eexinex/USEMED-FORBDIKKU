@@ -114,6 +114,10 @@ function phm_cached_ml_assessment(array $p): ?array
         return null;
     }
 
+    if (!empty($GLOBALS['phm_cached_ml_preload']['ready'])) {
+        return phm_cached_ml_assessment_from_preload($p);
+    }
+
     $patientId = (int) ($p['id'] ?? 0);
     $hn = (string) ($p['hn'] ?? '');
     $params = [];
@@ -175,6 +179,172 @@ function phm_cached_ml_assessment(array $p): ?array
         'cohort_tags' => $tags,
         'trajectory_status' => (string) ($score['trajectory_status'] ?? ''),
         'model_version' => (string) ($score['model_version'] ?? 'usemed-xgb-agent-v1'),
+    ];
+}
+
+function phm_cached_ml_assessment_from_preload(array $p): ?array
+{
+    $preload = $GLOBALS['phm_cached_ml_preload'] ?? null;
+
+    if (!is_array($preload) || empty($preload['ready'])) {
+        return null;
+    }
+
+    $patientId = (int) ($p['id'] ?? 0);
+    $hn = (string) ($p['hn'] ?? '');
+    $score = $patientId > 0 && isset($preload['scores_by_patient_id'][$patientId])
+        ? $preload['scores_by_patient_id'][$patientId]
+        : ($hn !== '' && isset($preload['scores_by_hn'][$hn]) ? $preload['scores_by_hn'][$hn] : null);
+
+    if (!$score) {
+        return null;
+    }
+
+    $reasonRows = [];
+    $reasons = $patientId > 0 && isset($preload['reasons_by_patient_id'][$patientId])
+        ? $preload['reasons_by_patient_id'][$patientId]
+        : ($hn !== '' && isset($preload['reasons_by_hn'][$hn]) ? $preload['reasons_by_hn'][$hn] : []);
+
+    foreach (array_slice($reasons, 0, 8) as $reason) {
+        $reasonRows[] = [
+            'type' => (string) ($reason['reason_type'] ?? 'ml_factor'),
+            'text' => (string) ($reason['reason_text'] ?? ''),
+            'source_feature' => (string) ($reason['source_feature'] ?? 'ml_model'),
+            'source_value' => (string) ($reason['source_value'] ?? ''),
+            'source_table' => (string) ($reason['source_table'] ?? 'ml_prediction'),
+            'weight' => (int) ($reason['contribution'] ?? 0),
+        ];
+    }
+
+    $priority = (string) ($score['priority_level'] ?? 'P3');
+    $featureSnapshot = json_decode((string) ($score['feature_snapshot'] ?? '{}'), true);
+    $actions = array_values(array_filter(array_map('trim', explode("\n", (string) ($score['recommendation_summary'] ?? '')))));
+    $tags = array_values(array_filter(array_map('trim', explode(',', (string) ($score['cohort_tags'] ?? '')))));
+
+    return [
+        'score' => (int) ($score['risk_score'] ?? 0),
+        'priority' => $priority,
+        'level' => (string) ($score['priority_label'] ?? $priority),
+        'sla' => (string) ($score['recommended_sla'] ?? ''),
+        'badge' => $priority === 'P1' ? 'red' : ($priority === 'P2' ? 'orange' : 'green'),
+        'reasons_detail' => $reasonRows,
+        'actions' => $actions,
+        'features' => is_array($featureSnapshot) ? $featureSnapshot : [],
+        'cohort_tags' => $tags,
+        'trajectory_status' => (string) ($score['trajectory_status'] ?? ''),
+        'model_version' => (string) ($score['model_version'] ?? 'usemed-xgb-agent-v1'),
+    ];
+}
+
+function phm_preload_cached_ml_assessments(array $patients): void
+{
+    if (!db_is_connected() || !$patients) {
+        return;
+    }
+
+    if (!empty($GLOBALS['phm_cached_ml_preload']['ready'])) {
+        return;
+    }
+
+    $ids = [];
+    $hns = [];
+    foreach ($patients as $p) {
+        $id = (int) ($p['id'] ?? 0);
+        $hn = trim((string) ($p['hn'] ?? ''));
+        if ($id > 0) {
+            $ids[$id] = $id;
+        }
+        if ($hn !== '') {
+            $hns[$hn] = $hn;
+        }
+    }
+
+    if (!$ids && !$hns) {
+        return;
+    }
+
+    $params = [];
+    $where = [];
+    if ($ids) {
+        $idPlaceholders = [];
+        foreach (array_values($ids) as $i => $id) {
+            $key = 'pid' . $i;
+            $idPlaceholders[] = ':' . $key;
+            $params[$key] = $id;
+        }
+        $where[] = 'patient_id IN (' . implode(',', $idPlaceholders) . ')';
+    }
+    if ($hns) {
+        $hnPlaceholders = [];
+        foreach (array_values($hns) as $i => $hn) {
+            $key = 'hn' . $i;
+            $hnPlaceholders[] = ':' . $key;
+            $params[$key] = $hn;
+        }
+        $where[] = 'hn IN (' . implode(',', $hnPlaceholders) . ')';
+    }
+
+    $scores = db_fetch_all(
+        "SELECT * FROM ai_population_scores
+         WHERE model_version LIKE 'usemed-xgb%' AND (" . implode(' OR ', $where) . ")
+         ORDER BY calculated_at DESC, id DESC",
+        $params
+    );
+
+    $scoreIds = [];
+    $scoresByPatientId = [];
+    $scoresByHn = [];
+    foreach ($scores as $score) {
+        $patientId = (int) ($score['patient_id'] ?? 0);
+        $hn = (string) ($score['hn'] ?? '');
+        if ($patientId > 0 && !isset($scoresByPatientId[$patientId])) {
+            $scoresByPatientId[$patientId] = $score;
+        }
+        if ($hn !== '' && !isset($scoresByHn[$hn])) {
+            $scoresByHn[$hn] = $score;
+        }
+        $scoreId = (int) ($score['id'] ?? 0);
+        if ($scoreId > 0) {
+            $scoreIds[$scoreId] = $scoreId;
+        }
+    }
+
+    $reasonsByPatientId = [];
+    $reasonsByHn = [];
+    if ($scoreIds) {
+        $reasonParams = [];
+        $reasonPlaceholders = [];
+        foreach (array_values($scoreIds) as $i => $scoreId) {
+            $key = 'sid' . $i;
+            $reasonPlaceholders[] = ':' . $key;
+            $reasonParams[$key] = $scoreId;
+        }
+        $reasons = db_fetch_all(
+            'SELECT score_id, patient_id, hn, reason_type, reason_text, source_feature, source_value, source_table, contribution
+             FROM ai_population_reasons
+             WHERE score_id IN (' . implode(',', $reasonPlaceholders) . ')
+             ORDER BY contribution DESC, id ASC',
+            $reasonParams
+        );
+
+        foreach ($reasons as $reason) {
+            $patientId = (int) ($reason['patient_id'] ?? 0);
+            $hn = (string) ($reason['hn'] ?? '');
+            if ($patientId > 0 && count($reasonsByPatientId[$patientId] ?? []) < 8) {
+                $reasonsByPatientId[$patientId][] = $reason;
+            }
+            if ($hn !== '' && count($reasonsByHn[$hn] ?? []) < 8) {
+                $reasonsByHn[$hn][] = $reason;
+            }
+        }
+    }
+
+    $GLOBALS['phm_cached_ml_preload'] = [
+        'ready' => true,
+        'scores_by_patient_id' => $scoresByPatientId,
+        'scores_by_hn' => $scoresByHn,
+        'reasons_by_patient_id' => $reasonsByPatientId,
+        'reasons_by_hn' => $reasonsByHn,
     ];
 }
 
@@ -439,6 +609,7 @@ if (db_is_connected()) {
         $patients = $rows;
     }
 }
+phm_preload_cached_ml_assessments($patients);
 
 $filters = [
     'cohort' => $_GET['cohort'] ?? 'all',
