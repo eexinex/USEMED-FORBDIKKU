@@ -491,50 +491,82 @@ page_start('Population Health', 'doctor', 'dashboard');
         </div>
     </div>
 
-                    <div class="outcome-step <?= e($step[2]) ?>"><span><?= icon_svg($step[3]) ?></span><small><?= e($step[0]) ?></small><strong><?= e((string)$step[1]) ?></strong></div>
-                <?php endforeach; ?>
+    <!-- Main Table -->
+    <div class="table-card mt-2">
+        <div class="topbar" style="padding: 16px; border-bottom: 1px solid var(--line);">
+            <div>
+                <h2 style="margin: 0; font-size: 20px; color: var(--ink);">รายชื่อผู้ป่วยที่ต้องติดตาม (Queue)</h2>
+                <p style="margin: 4px 0 0; color: var(--muted); font-size: 14px;">เรียงตามความเร่งด่วนและคะแนน AI Risk</p>
             </div>
-        </article>
-    </section>
-
-    <section id="cohort-detail" class="phm-panel phm-detail-section">
-        <div class="phm-panel-head"><div><span>Cohort Detail</span><h2>วิเคราะห์กลุ่มผู้ป่วยแบบละเอียด</h2></div></div>
-        <div class="cohort-detail-grid">
-            <?php foreach ($cohortStats as $cs): ?>
-                <article>
-                    <h3><?= e($cs['label']) ?></h3>
-                    <div><span>จำนวน</span><strong><?= e((string)$cs['count']) ?></strong></div>
-                    <div><span>P1</span><strong><?= e((string)$cs['p1']) ?> · <?= e($cs['p1_percent']) ?></strong></div>
-                    <div><span>HbA1c เฉลี่ย</span><strong><?= e($cs['hba1c_avg']) ?></strong></div>
-                    <div><span>BP เฉลี่ย</span><strong><?= e($cs['bp_avg']) ?></strong></div>
-                    <p><?= e($cs['recommendation']) ?></p>
-                </article>
-            <?php endforeach; ?>
         </div>
-    </section>
-
-    <details id="all-patients" class="phm-panel phm-accordion-panel">
-        <summary>ดูรายชื่อทั้งหมด + เหตุผลจาก AI Scoring Pipeline</summary>
-        <div class="table-wrap mt-1">
-            <table class="table" id="phmTable">
-                <thead><tr><th>Priority</th><th>ผู้ป่วย</th><th>Risk</th><th>Trajectory</th><th>Action</th></tr></thead>
-                <tbody>
-                <?php foreach ($filtered as $p): ?>
-                    <?php $a = phm_assessment($p); $hn = phm_text($p, 'hn'); ?>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
                     <tr>
-                        <td><span class="priority-badge <?= e(strtolower($a['priority'])) ?>"><?= e($a['priority']) ?></span><br><small><?= e($a['sla']) ?></small></td>
-                        <td><strong><?= e(phm_text($p, 'full_name')) ?></strong><br><span class="text-muted"><?= e($hn) ?> · <?= e(phm_text($p, 'care_area', 'OPD')) ?> · <?= e(phm_text($p, 'disease')) ?></span></td>
-                        <td><strong><?= e((string)$a['score']) ?>/100</strong></td>
-                        <td><?= e($a['trajectory_status']) ?></td>
-                        <td><a class="btn secondary small" href="<?= e(app_url('doctor/add-treatment.php?hn=' . urlencode($hn))) ?>">ติดตาม</a></td>
+                        <th style="width: 80px;">Priority</th>
+                        <th style="width: 80px;">Score</th>
+                        <th>ผู้ป่วย / HN</th>
+                        <th>เหตุผลที่ต้องติดตาม</th>
+                        <th style="width: 180px;">Action ที่แนะนำ</th>
+                        <th style="width: 100px;">จัดการ</th>
                     </tr>
-                <?php endforeach; ?>
+                </thead>
+                <tbody>
+                    <?php if (empty($queueItems)): ?>
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 40px; color: var(--muted);">
+                                ไม่พบข้อมูลผู้ป่วยในหมวดหมู่นี้
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($queueItems as $index => $p): ?>
+                            <?php
+                                $a = phm_assessment($p);
+                                $badgeColor = $a['priority'] === 'P1' ? 'red' : ($a['priority'] === 'P2' ? 'orange' : 'green');
+                            ?>
+                            <tr>
+                                <td>
+                                    <span class="badge <?= e($badgeColor) ?>" style="font-size: 14px; font-weight: bold;">
+                                        <?= e($a['priority']) ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong style="font-size: 18px; color: var(--ink);"><?= e((string)$a['score']) ?></strong>
+                                </td>
+                                <td>
+                                    <strong style="display: block; color: var(--ink); font-size: 15px;">
+                                        <?= e($p['full_name'] ?? 'ไม่ระบุชื่อ') ?>
+                                    </strong>
+                                    <span style="color: var(--muted); font-size: 13px;">
+                                        HN: <?= e($p['hn'] ?? '-') ?> · <?= e($p['care_area'] ?? 'OPD') ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="font-size: 14px; color: var(--ink); line-height: 1.4;">
+                                        <?php foreach (array_slice($a['reasons_detail'], 0, 2) as $reason): ?>
+                                            <div>• <?= e($reason['text']) ?></div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="font-size: 13px; color: var(--primary-dark);">
+                                        <?php foreach (array_slice($a['actions'], 0, 2) as $action): ?>
+                                            <div>✓ <?= e($action) ?></div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="<?= e(app_url('doctor/patient-profile.php?hn=' . urlencode($p['hn'] ?? ''))) ?>" class="btn secondary" style="padding: 6px 12px; font-size: 13px;">
+                                        เปิดประวัติ
+                                    </a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
-    </details>
-
-    <div class="phm-page-footer">ข้อมูลอัปเดตล่าสุด <?= e(date('d M Y H:i')) ?> · ระบบ AI Population Health</div>
-</section>
+    </div>
+</div>
 
 <?php page_end(); ?>
