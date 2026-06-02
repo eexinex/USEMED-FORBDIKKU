@@ -8,7 +8,11 @@ if (session_status() === PHP_SESSION_NONE) {
     $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
                 (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
 
-    session_save_path('/tmp');
+    $tmpDir = sys_get_temp_dir() . '/usemed_sessions';
+    if (!is_dir($tmpDir)) {
+        @mkdir($tmpDir, 0777, true);
+    }
+    session_save_path($tmpDir);
     session_set_cookie_params([
         'secure' => $isSecure,
         'httponly' => true,
