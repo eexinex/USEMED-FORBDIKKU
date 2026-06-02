@@ -138,7 +138,7 @@ function phm_cached_ml_assessment(array $p): ?array
         'SELECT * FROM ai_population_scores WHERE ' . implode(' OR ', $where) . ' ORDER BY calculated_at DESC LIMIT 1',
         $params
     );
-    if (!$score || !str_starts_with((string) ($score['model_version'] ?? ''), 'usemed-xgb')) {
+    if (!$score) {
         return null;
     }
 
@@ -286,7 +286,7 @@ function phm_preload_cached_ml_assessments(array $patients): void
 
     $scores = db_fetch_all(
         "SELECT * FROM ai_population_scores
-         WHERE model_version LIKE 'usemed-xgb%' AND (" . implode(' OR ', $where) . ")
+         WHERE " . implode(' OR ', $where) . "
          ORDER BY calculated_at DESC, id DESC",
         $params
     );

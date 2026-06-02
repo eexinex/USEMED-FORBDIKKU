@@ -55,10 +55,10 @@ topbar(
     <div class="form-card">
         <h2>กรอกข้อมูลเพื่อประเมิน</h2>
         <p class="text-muted">
-            Powered by the trained XGBoost ML service. If the model is offline, this page reports ML unavailable instead of falling back to the old rule engine.
+            ประเมินแบบเร็วทันทีเป็นค่าเริ่มต้น หากต้องการเรียก ML service สดให้เปิดหน้านี้ด้วย live_ai=1
         </p>
 
-        <form method="post" class="mt-2">
+        <form method="post" class="mt-2" data-loading-title="กำลังประเมิน AI Risk" data-loading-detail="ระบบกำลังคำนวณความเสี่ยงจากข้อมูลสุขภาพล่าสุด">
             <div class="form-grid">
                 <div class="field">
                     <label for="age">อายุ</label>
@@ -202,7 +202,7 @@ topbar(
                         <strong>Recommendation</strong>
                         <span><?= e($recommendation) ?></span>
                     </div>
-                    <span class="badge blue">XGBoost</span>
+                    <span class="badge blue"><?= e(!empty($risk['model_available']) ? 'XGBoost' : 'Instant') ?></span>
                 </div>
             <?php endforeach; ?>
         </div>

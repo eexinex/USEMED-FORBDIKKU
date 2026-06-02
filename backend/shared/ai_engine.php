@@ -540,19 +540,22 @@ function ai_predict_risk_with_ml(array $data, array $patient = []): array
         'additional_medication' => (string) ($patient['current_medications'] ?? ''),
     ];
 
+    $instant = ai_calculate_risk($data);
+    $instant['model_available'] = false;
+    $instant['model_version'] = 'usemed-instant-risk-v1';
+    $instant['summary'] .= ' (ประเมินแบบเร็ว)';
+    $instant['factors'][] = 'Instant risk engine';
+
+    $syncLive = function_exists('envv') ? (string) envv('USEMED_LIVE_AI_SYNC', '0') : '0';
+    $manualLive = isset($_GET['live_ai']) && (string) $_GET['live_ai'] === '1';
+    if (!$manualLive && in_array(strtolower($syncLive), ['0', 'false', 'off', 'no'], true)) {
+        return $instant;
+    }
+
     $ml = usemed_ai_call_ml_service($patient, $features);
     if (!$ml) {
-        return [
-            'score' => 0,
-            'level' => 'Unavailable',
-            'level_th' => 'ML unavailable',
-            'color' => 'gray',
-            'summary' => 'XGBoost model artifacts or ML service are not available yet. Train the model and start ml_service before using live prediction.',
-            'factors' => ['ML service unavailable'],
-            'recommendations' => ['Run ml_service/models/train.py, start the FastAPI service, then retry prediction.'],
-            'model_available' => false,
-            'model_version' => 'unavailable',
-        ];
+        $instant['factors'][] = 'ML service unavailable, used instant engine';
+        return $instant;
     }
 
     $score = max(0, min(100, (int) round((float) ($ml['risk_score'] ?? 0))));

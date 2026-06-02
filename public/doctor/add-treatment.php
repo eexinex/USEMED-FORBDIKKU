@@ -460,7 +460,7 @@ topbar(
     </aside>
 </section>
 
-<form method="post" class="form-card full-width medical-form compact-emr-form" autocomplete="off">
+<form method="post" class="form-card full-width medical-form compact-emr-form" autocomplete="off" data-loading-title="กำลังบันทึกเวชระเบียน" data-loading-detail="ระบบกำลังประเมินความเสี่ยงแบบเร็วและบันทึกข้อมูล EMR">
     <section class="emr-section">
         <h2><small>1</small> Encounter / Visit</h2>
         <p class="emr-subtitle">ข้อมูลครั้งที่มารับบริการ ใช้แยก OPD/IPD/Follow up/ER และสิทธิการรักษา</p>

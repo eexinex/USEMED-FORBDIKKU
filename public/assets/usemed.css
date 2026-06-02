@@ -784,6 +784,126 @@ input[type="submit"]:hover {
   gap: 10px;
 }
 
+.app-loading-overlay {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 12000;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.app-loading-overlay.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.app-loading-box {
+  display: grid;
+  grid-template-columns: 28px minmax(180px, 1fr);
+  gap: 12px;
+  align-items: center;
+  max-width: min(360px, calc(100vw - 36px));
+  padding: 13px 15px;
+  border: 1px solid #b8ded6;
+  border-radius: 16px;
+  background: #ffffff;
+  color: var(--ink);
+  box-shadow: 0 8px 22px rgba(8, 72, 63, 0.12);
+}
+
+.app-loading-box strong,
+.app-loading-box small {
+  display: block;
+}
+
+.app-loading-box strong {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.app-loading-box small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.app-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #d8f0eb;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: appLoadingSpin 0.7s linear infinite;
+}
+
+button[aria-busy="true"],
+.btn[aria-busy="true"] {
+  cursor: progress;
+}
+
+.cache-progress {
+  display: grid;
+  gap: 7px;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fffd;
+}
+
+.cache-progress div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.cache-progress strong,
+.cache-progress span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.cache-progress i {
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dcebe7;
+}
+
+.cache-progress b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.cache-progress small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@keyframes appLoadingSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-overlay {
+    transition: none;
+  }
+
+  .app-loading-spinner {
+    animation-duration: 1.4s;
+  }
+}
+
 /* Table */
 
 .table-wrap {

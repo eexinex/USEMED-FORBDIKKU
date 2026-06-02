@@ -20,6 +20,7 @@
     setupCopyButtons();
     setupPrintButtons();
     setupAutoHideAlert();
+    setupAppLoading();
   });
 
   function setupPasswordToggle() {
@@ -334,6 +335,98 @@
         }, 300);
       }, 4200);
     });
+  }
+
+  function setupAppLoading() {
+    var overlay = null;
+    var navigationTimer = null;
+
+    function ensureOverlay() {
+      if (overlay) {
+        return overlay;
+      }
+
+      overlay = document.createElement("div");
+      overlay.className = "app-loading-overlay";
+      overlay.setAttribute("role", "status");
+      overlay.setAttribute("aria-live", "polite");
+      overlay.innerHTML =
+        '<div class="app-loading-box">' +
+          '<span class="app-loading-spinner" aria-hidden="true"></span>' +
+          '<div>' +
+            '<strong data-loading-title>กำลังดำเนินการ</strong>' +
+            '<small data-loading-detail>กำลังโหลดข้อมูล โปรดรอสักครู่</small>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      return overlay;
+    }
+
+    function showLoading(title, detail) {
+      var node = ensureOverlay();
+      var titleNode = qs("[data-loading-title]", node);
+      var detailNode = qs("[data-loading-detail]", node);
+
+      if (titleNode) {
+        titleNode.textContent = title || "กำลังดำเนินการ";
+      }
+      if (detailNode) {
+        detailNode.textContent = detail || "กำลังโหลดข้อมูล โปรดรอสักครู่";
+      }
+
+      window.clearTimeout(navigationTimer);
+      navigationTimer = window.setTimeout(function () {
+        node.classList.add("is-visible");
+      }, 80);
+    }
+
+    qsa("form").forEach(function (form) {
+      form.addEventListener("submit", function (event) {
+        if (form.hasAttribute("data-no-loading")) {
+          return;
+        }
+        if (typeof form.checkValidity === "function" && !form.checkValidity()) {
+          return;
+        }
+
+        var submitter = event.submitter || qs('button[type="submit"], input[type="submit"]', form);
+        var title = form.getAttribute("data-loading-title") ||
+          (submitter ? submitter.getAttribute("data-loading-title") : "") ||
+          "กำลังบันทึกข้อมูล";
+        var detail = form.getAttribute("data-loading-detail") ||
+          (submitter ? submitter.getAttribute("data-loading-detail") : "") ||
+          "ระบบกำลังตรวจสอบและบันทึกข้อมูล";
+
+        if (submitter && !submitter.disabled) {
+          submitter.setAttribute("aria-busy", "true");
+        }
+        showLoading(title, detail);
+      });
+    });
+
+    qsa("a[href]").forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        if (event.defaultPrevented || link.hasAttribute("data-no-loading")) {
+          return;
+        }
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || link.target === "_blank") {
+          return;
+        }
+
+        var href = link.getAttribute("href") || "";
+        if (href === "" || href.charAt(0) === "#" || href.indexOf("javascript:") === 0) {
+          return;
+        }
+
+        var title = link.getAttribute("data-loading-title") || "กำลังเปิดหน้า";
+        var detail = link.getAttribute("data-loading-detail") || "กำลังโหลดข้อมูลล่าสุด";
+        showLoading(title, detail);
+      });
+    });
+
+    window.USEMEDLoading = {
+      show: showLoading
+    };
   }
 
   function getNumber(form, name) {
