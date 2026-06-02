@@ -202,3 +202,7 @@ page_start('Doctor Dashboard', 'doctor', 'dashboard');
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+
+<?php page_end(); ?>

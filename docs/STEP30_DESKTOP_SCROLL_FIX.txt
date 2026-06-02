@@ -1,0 +1,15 @@
+STEP30_DESKTOP_SCROLL_FIX
+
+Fixed desktop dashboard scrolling behavior after mobile self-assessment cleanup.
+
+Changes:
+- Desktop only (min-width: 861px): app shell now uses a locked 100dvh dashboard viewport.
+- Sidebar now stays full-height on the left and scrolls internally if its menu is taller than the viewport.
+- Main content now scrolls independently on the right.
+- Mobile behavior from Step 29 remains unchanged.
+- Updated CSS cache query string in backend/shared/layout.php to step30-desktop-scroll-fix.
+
+Files changed:
+- frontend/css/usemed.css
+- public/assets/usemed.css
+- backend/shared/layout.php
