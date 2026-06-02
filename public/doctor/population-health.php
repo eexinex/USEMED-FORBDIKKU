@@ -498,6 +498,12 @@ $cohortLabels = [
     'missed' => 'ขาดนัด',
 ];
 
+$openTasks = count(array_filter($filtered, fn($p) => in_array(phm_assessment($p)['priority'], ['P1', 'P2'], true)));
+
+page_start('Population Health', 'doctor', 'population-health');
+?>
+<section class="phm-pro-page">
+    <section class="phm-pro-hero">
         <div class="hero-spark">✦</div>
         <div>
             <h1>AI Population Health Management</h1>

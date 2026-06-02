@@ -4509,3 +4509,30 @@ body.role-patient{--portal-sidebar: var(--primary);}
     opacity: 0.9 !important;
 }
 
+
+/* RESTORE PROGRESS BAR AND CIRCLE COLORS */
+.score-circle {
+    background: conic-gradient(var(--primary) calc(var(--value) * 1%), var(--line) 0) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative;
+}
+.score-circle::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 12px !important;
+    background: #fff !important;
+    border-radius: 50% !important;
+}
+.score-circle strong {
+    position: relative !important;
+    z-index: 2 !important;
+    font-size: 34px;
+    color: var(--ink) !important;
+}
+.riskbar span {
+    background: var(--primary) !important;
+}
+
