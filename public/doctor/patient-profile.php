@@ -63,21 +63,21 @@ topbar(
 );
 ?>
 
-<div style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
+<div class="doctor-patient-profile" style="max-width: 1200px; margin: 0 auto; padding: 24px 16px;">
     
     <!-- Top Header & Search -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; align-items: start;">
-        <div class="card" style="padding: 24px; border-left: 6px solid var(--primary);">
-            <div style="display: flex; gap: 20px; align-items: flex-start;">
-                <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; font-size: 28px; border: 2px solid var(--primary);">
+    <div class="patient-profile-top" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; align-items: start;">
+        <div class="card patient-profile-card" style="padding: 24px; border-left: 6px solid var(--primary);">
+            <div class="patient-profile-head" style="display: flex; gap: 20px; align-items: flex-start;">
+                <div class="patient-profile-avatar" style="width: 64px; height: 64px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; font-size: 28px; border: 2px solid var(--primary);">
                     👤
                 </div>
                 <div>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                    <div class="patient-profile-title-row" style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                         <h1 style="margin: 0; font-size: 24px; color: var(--ink);"><?= e($patient['full_name'] ?? 'ไม่พบชื่อผู้ป่วย') ?></h1>
                         <span class="badge <?= e($riskBadge) ?>"><?= e($riskLevel) ?> Risk</span>
                     </div>
-                    <div style="color: var(--muted); display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px;">
+                    <div class="patient-profile-meta" style="color: var(--muted); display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px;">
                         <span><strong>HN:</strong> <?= e($patient['hn'] ?? 'HN0001') ?></span>
                         <span><strong>อายุ:</strong> <?= e($patient['age'] ?? '-') ?> ปี</span>
                         <span><strong>เพศ:</strong> <?= e($patient['gender'] ?? '-') ?></span>
@@ -90,9 +90,9 @@ topbar(
             </div>
         </div>
 
-        <div class="card" style="padding: 24px;">
+        <div class="card patient-profile-search" style="padding: 24px;">
             <h2 style="margin: 0 0 16px; font-size: 16px; color: var(--ink);">ค้นหาผู้ป่วยอื่น</h2>
-            <form method="get" style="display: flex; gap: 8px;">
+            <form class="patient-profile-search-form" method="get" style="display: flex; gap: 8px;">
                 <input type="text" name="hn" value="<?= e($hn) ?>" placeholder="กรอกเลข HN..." style="flex: 1; padding: 10px; border: 1px solid var(--line); border-radius: 8px;">
                 <button class="btn" type="submit">ค้นหา</button>
             </form>
@@ -103,22 +103,22 @@ topbar(
     </div>
 
     <!-- Quick Actions -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
-        <a href="<?= e(app_url('doctor/add-treatment.php?hn=' . urlencode($hn))) ?>" class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
+    <div class="patient-profile-actions" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+        <a href="<?= e(app_url('doctor/add-treatment.php?hn=' . urlencode($hn))) ?>" class="card patient-profile-action" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
             <div style="font-size: 24px;">🩺</div>
             <div>
                 <strong style="display: block; color: var(--ink); margin-bottom: 4px;">เพิ่มการรักษาใหม่</strong>
                 <span style="color: var(--muted); font-size: 13px;">บันทึก Visit และวินิจฉัย</span>
             </div>
         </a>
-        <a href="<?= e(app_url('doctor/prescriptions.php?hn=' . urlencode($hn))) ?>" class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
+        <a href="<?= e(app_url('doctor/prescriptions.php?hn=' . urlencode($hn))) ?>" class="card patient-profile-action" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
             <div style="font-size: 24px;">💊</div>
             <div>
                 <strong style="display: block; color: var(--ink); margin-bottom: 4px;">สั่งยา / ใบสั่งยา</strong>
                 <span style="color: var(--muted); font-size: 13px;">จัดการรายการยาผู้ป่วย</span>
             </div>
         </a>
-        <a href="<?= e(app_url('doctor/referral.php?hn=' . urlencode($hn))) ?>" class="card" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
+        <a href="<?= e(app_url('doctor/referral.php?hn=' . urlencode($hn))) ?>" class="card patient-profile-action" style="padding: 20px; display: flex; align-items: center; gap: 16px; text-decoration: none; background: var(--bg); border: 1px solid var(--line);">
             <div style="font-size: 24px;">🚑</div>
             <div>
                 <strong style="display: block; color: var(--ink); margin-bottom: 4px;">ส่งต่อ / ส่งตัว</strong>
@@ -128,12 +128,12 @@ topbar(
     </div>
 
     <!-- Main Content Split -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
+    <div class="patient-profile-layout" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; align-items: start;">
         
         <!-- Left Column: Visit History & Documents -->
         <div>
             <!-- Visits -->
-            <div class="table-card" style="margin-bottom: 24px;">
+            <div class="table-card patient-profile-visits" style="margin-bottom: 24px;">
                 <div style="padding: 16px 24px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
                     <h2 style="margin: 0; font-size: 18px; color: var(--ink);">ประวัติการรักษา</h2>
                     <span style="color: var(--muted); font-size: 14px;"><?= e((string)count($visits)) ?> รายการ</span>
@@ -176,7 +176,7 @@ topbar(
             </div>
 
             <!-- Documents -->
-            <div class="card">
+            <div class="card patient-profile-documents">
                 <div style="padding: 16px 24px; border-bottom: 1px solid var(--line);">
                     <h2 style="margin: 0; font-size: 18px; color: var(--ink);">เอกสารสุขภาพ</h2>
                 </div>
@@ -191,7 +191,7 @@ topbar(
                             $docType = $doc['document_type'] ?? $doc['type'] ?? 'PDF';
                             $docDate = $doc['created_at'] ?? $doc['date'] ?? '-';
                             ?>
-                            <a href="<?= e(app_url('doctor/document-view.php?id=' . $docId)) ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); text-decoration: none;">
+                            <a class="patient-profile-document" href="<?= e(app_url('doctor/document-view.php?id=' . $docId)) ?>" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); text-decoration: none;">
                                 <div>
                                     <strong style="display: block; color: var(--ink); margin-bottom: 4px;"><?= e($docTitle) ?></strong>
                                     <span style="color: var(--muted); font-size: 13px;"><?= e($docDate) ?></span>
@@ -205,7 +205,7 @@ topbar(
         </div>
 
         <!-- Right Column: AI Risk -->
-        <div class="card" style="background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%); border: 1px solid var(--line);">
+        <div class="card patient-profile-ai-card" style="background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%); border: 1px solid var(--line);">
             <div style="padding: 20px; border-bottom: 1px solid var(--line); text-align: center;">
                 <span class="badge <?= e($riskBadge) ?>" style="margin-bottom: 12px;">Risk <?= e($riskLevel) ?></span>
                 <h2 style="margin: 0 0 8px; font-size: 18px; color: var(--ink);">ระดับความเสี่ยงล่าสุด</h2>
@@ -227,9 +227,6 @@ topbar(
     </div>
 </div>
 
-<?php
-page_end();
-?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -265,3 +262,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<?php page_end(); ?>
