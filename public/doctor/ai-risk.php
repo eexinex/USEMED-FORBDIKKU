@@ -7,6 +7,9 @@ require_once __DIR__ . '/../../backend/shared/layout.php';
 require_once __DIR__ . '/../../backend/shared/ai_engine.php';
 
 require_login('doctor');
+if (session_status() === PHP_SESSION_ACTIVE && (is_post() || empty($_SESSION['flash']))) {
+    session_write_close();
+}
 
 $patient = demo_patient();
 

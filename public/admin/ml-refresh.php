@@ -7,6 +7,9 @@ require_once __DIR__ . '/../../backend/shared/layout.php';
 require_once __DIR__ . '/../../backend/shared/ai_engine.php';
 
 require_login('admin');
+if (session_status() === PHP_SESSION_ACTIVE && (is_post() || empty($_SESSION['flash']))) {
+    session_write_close();
+}
 
 $limit = max(1, min(20, (int) ($_GET['limit'] ?? $_POST['limit'] ?? 10)));
 $offset = max(0, (int) ($_GET['offset'] ?? $_POST['offset'] ?? 0));

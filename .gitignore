@@ -2,6 +2,7 @@
 backend/config/local.php
 backend/config.local.php
 .impeccable
+PROJECT_PROPOSAL.md
 
 # Python/runtime cache
 __pycache__/

@@ -7,6 +7,10 @@ require_once __DIR__ . '/../../backend/shared/layout.php';
 require_once __DIR__ . '/../../backend/shared/ai_engine.php';
 
 require_login('doctor');
+$currentDoctorUser = current_user() ?? [];
+if (is_post() && session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 usemed_ensure_extended_schema();
 usemed_seed_demo_data();
 
@@ -187,6 +191,10 @@ if (is_post()) {
         redirect_to('doctor/add-treatment.php?hn=' . urlencode($hn !== '' ? $hn : $hnDefault));
     }
 
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
     $patientForRisk = demo_patient($hn);
     if (db_is_connected()) {
         $patientDbForRisk = db_fetch_one('SELECT * FROM patients WHERE hn = :hn LIMIT 1', ['hn' => $hn]);
@@ -218,7 +226,7 @@ if (is_post()) {
 
         $data = [
             'patient_id' => (int) $patientRow['id'],
-            'doctor_id' => (int) (current_user()['id'] ?? 1),
+            'doctor_id' => (int) ($currentDoctorUser['id'] ?? 1),
             'visit_date' => $visitDate,
             'title' => $title,
             'diagnosis' => $diagnosis,
@@ -340,6 +348,10 @@ if (is_post()) {
     }
 
     if (!$savedToDb) {
+        if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
+            session_start();
+        }
+
         $_SESSION['demo_saved_visits'] = $_SESSION['demo_saved_visits'] ?? [];
         $_SESSION['demo_saved_visits'][] = [
             'id' => time(),
@@ -348,8 +360,8 @@ if (is_post()) {
             'date' => $visitDate,
             'visit_date' => $visitDate,
             'title' => $title,
-            'doctor' => current_user()['name'] ?? 'Doctor',
-            'doctor_name' => current_user()['name'] ?? 'Doctor',
+            'doctor' => $currentDoctorUser['name'] ?? 'Doctor',
+            'doctor_name' => $currentDoctorUser['name'] ?? 'Doctor',
             'diagnosis' => $diagnosis,
             'treatment_plan' => $treatmentPlan,
             'summary' => $visitReason,

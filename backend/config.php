@@ -191,6 +191,10 @@ if (!function_exists('redirect_to')) {
 if (!function_exists('flash_set')) {
     function flash_set(string $type, string $message): void
     {
+        if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
+            session_start();
+        }
+
         $_SESSION['flash'] = [
             'type' => $type,
             'message' => $message,
