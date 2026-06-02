@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
+import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 try:
     import joblib
@@ -35,8 +37,8 @@ class PatientFeatures(BaseModel):
     glucose: Optional[float] = None
     ldl: Optional[float] = None
     cholesterol: Optional[float] = None
-    history_systolic: List[float] = []
-    history_hba1c: List[float] = []
+    history_systolic: List[float] = Field(default_factory=list)
+    history_hba1c: List[float] = Field(default_factory=list)
     med_metformin: int = 0
     med_insulin: int = 0
     med_ccb: int = 0
@@ -65,32 +67,60 @@ class PredictionResponse(BaseModel):
     hba1c_uncontrolled_probability: Optional[float] = None
     predicted_systolic_60d: Optional[float] = None
     bp_uncontrolled_probability: Optional[float] = None
-    top_factors: List[str] = []
+    top_factors: List[str] = Field(default_factory=list)
     recommendation: str = ""
 
 
 MODELS: Dict[str, Dict[str, Any]] = {}
 METADATA: Dict[str, Any] = {}
+_MODELS_LOADED = False
+_MODEL_LOAD_ERROR = ""
+_MODEL_LOAD_LOCK = threading.Lock()
 
 
-def load_models() -> None:
-    global MODELS, METADATA
-    MODELS = {}
-    METADATA = {}
-    if joblib is None or not METADATA_PATH.exists():
+def load_models(force: bool = False) -> None:
+    """Load ML artifacts lazily so free-tier cold starts stay lightweight."""
+    global MODELS, METADATA, _MODELS_LOADED, _MODEL_LOAD_ERROR
+    if _MODELS_LOADED and not force:
         return
-    METADATA = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
-    for model_info in METADATA.get("models", []):
-        artifact = Path(model_info["artifact"])
-        if not artifact.is_absolute():
-            artifact = ARTIFACT_DIR / artifact.name
-        if artifact.exists():
-            MODELS[model_info["name"]] = joblib.load(artifact)
+
+    with _MODEL_LOAD_LOCK:
+        if _MODELS_LOADED and not force:
+            return
+
+        MODELS = {}
+        METADATA = {}
+        _MODEL_LOAD_ERROR = ""
+
+        if joblib is None:
+            _MODELS_LOADED = True
+            _MODEL_LOAD_ERROR = "joblib is unavailable"
+            return
+        if not METADATA_PATH.exists():
+            _MODELS_LOADED = True
+            _MODEL_LOAD_ERROR = "model metadata is missing"
+            return
+
+        try:
+            METADATA = json.loads(METADATA_PATH.read_text(encoding="utf-8"))
+            for model_info in METADATA.get("models", []):
+                artifact = Path(model_info["artifact"])
+                if not artifact.is_absolute():
+                    artifact = ARTIFACT_DIR / artifact.name
+                if artifact.exists():
+                    MODELS[model_info["name"]] = joblib.load(artifact)
+        except Exception as exc:  # pragma: no cover - defensive runtime fallback
+            MODELS = {}
+            METADATA = {}
+            _MODEL_LOAD_ERROR = str(exc)
+        finally:
+            _MODELS_LOADED = True
 
 
 @app.on_event("startup")
 def startup_event() -> None:
-    load_models()
+    if os.getenv("USEMED_ML_PRELOAD", "0").lower() in {"1", "true", "on", "yes"}:
+        load_models()
 
 
 def disease_group(patient: PatientFeatures) -> str:
@@ -227,17 +257,27 @@ def recommendation(priority: str, hba1c_prob: Optional[float], bp_prob: Optional
 
 @app.get("/health")
 def health() -> Dict[str, Any]:
-    return {"ok": True, "model_available": bool(MODELS), "model_version": METADATA.get("model_version", "unavailable"), "models": list(MODELS.keys())}
+    return {
+        "ok": True,
+        "service": "ml",
+        "model_loaded": _MODELS_LOADED,
+        "model_available": bool(MODELS),
+        "model_version": METADATA.get("model_version", "unavailable"),
+        "models": list(MODELS.keys()),
+        "load_error": _MODEL_LOAD_ERROR,
+    }
 
 
 @app.get("/model-info")
 def model_info() -> Dict[str, Any]:
-    return {"metadata": METADATA, "loaded_models": list(MODELS.keys())}
+    load_models()
+    return {"metadata": METADATA, "loaded_models": list(MODELS.keys()), "load_error": _MODEL_LOAD_ERROR}
 
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict_risk(patient: PatientFeatures) -> PredictionResponse:
     payload = make_feature_row(patient)
+    load_models()
     if not MODELS:
         return PredictionResponse(
             hn=patient.hn,

@@ -8,18 +8,18 @@ require_once dirname(__DIR__) . '/config.php';
 function db(): ?PDO
 {
     static $pdo = null;
-    static $failed = false;
+    static $failedUntil = 0;
 
     if ($pdo instanceof PDO) {
         return $pdo;
     }
 
-    if ($failed) {
+    if ($failedUntil > time()) {
         return null;
     }
 
     if (DB_HOST === '' || DB_NAME === '' || DB_USER === '') {
-        $failed = true;
+        $failedUntil = time() + 30;
         return null;
     }
 
@@ -55,7 +55,8 @@ function db(): ?PDO
 
         return $pdo;
     } catch (Throwable $e) {
-        $failed = true;
+        $pdo = null;
+        $failedUntil = time() + 5;
         error_log('Database connection failed: ' . $e->getMessage());
         return null;
     }

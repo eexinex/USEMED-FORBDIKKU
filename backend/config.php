@@ -83,6 +83,10 @@ if (!defined('DB_HOST')) {
     define('DB_HOST', (string) envv('DB_HOST', ''));
 }
 
+if (!defined('DB_PORT')) {
+    define('DB_PORT', (string) envv('DB_PORT', '5432'));
+}
+
 if (!defined('DB_NAME')) {
     define('DB_NAME', (string) envv('DB_NAME', ''));
 }

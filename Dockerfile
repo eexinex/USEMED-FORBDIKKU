@@ -34,7 +34,7 @@ RUN sed -i 's/80/7860/g' /etc/apache2/sites-available/000-default.conf /etc/apac
 
 # Enable Apache mod_rewrite and KeepAlive
 RUN a2enmod rewrite \
-    && echo "ServerName localhost\nDirectoryIndex index.html index.php\nErrorDocument 500 /500.html\nErrorDocument 502 /500.html\nErrorDocument 503 /500.html\nErrorDocument 504 /500.html\nTimeout 10\nKeepAlive Off\nMaxKeepAliveRequests 50\nKeepAliveTimeout 1" >> /etc/apache2/apache2.conf \
+    && echo "ServerName localhost\nDirectoryIndex index.html index.php\nErrorDocument 500 /500.html\nErrorDocument 502 /500.html\nErrorDocument 503 /500.html\nErrorDocument 504 /500.html\nTimeout 60\nKeepAlive Off\nMaxKeepAliveRequests 50\nKeepAliveTimeout 1" >> /etc/apache2/apache2.conf \
     && echo "RedirectMatch 302 ^/healthz\\.php$ /healthz.html" > /etc/apache2/conf-available/usemed-healthz.conf \
     && a2enconf usemed-healthz
 
