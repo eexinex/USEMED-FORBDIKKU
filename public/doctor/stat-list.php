@@ -190,7 +190,7 @@ topbar(
             <div class="document-card">
                 <div>
                     <strong>Risk Engine</strong>
-                    <span>Rule-based AI Assessment</span>
+                    <span>XGBoost ML Assessment</span>
                 </div>
                 <span class="badge blue">AI</span>
             </div>

@@ -158,6 +158,7 @@ function nav_items(string $role): array
         return [
             'dashboard' => ['label' => 'Dashboard', 'href' => 'admin/dashboard.php', 'icon' => 'dashboard'],
             'users' => ['label' => 'ผู้ใช้งาน', 'href' => 'admin/users.php', 'icon' => 'users'],
+            'ml_refresh' => ['label' => 'ML Refresh', 'href' => 'admin/ml-refresh.php', 'icon' => 'spark'],
             'tickets' => ['label' => 'Support', 'href' => 'admin/tickets.php', 'icon' => 'help'],
         ];
     }

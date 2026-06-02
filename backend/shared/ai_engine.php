@@ -291,6 +291,9 @@ function usemed_ai_extract_features(array $patient): array
     $hba1c = usemed_ai_float($latestVisit['hba1c'] ?? null);
     if ($hba1c === null) { $hba1c = usemed_ai_float($self['hba1c'] ?? null); }
 
+    $cholesterol = usemed_ai_float($latestVisit['cholesterol'] ?? null);
+    $ldl = usemed_ai_float($latestVisit['lipid_ldl'] ?? $latestVisit['ldl'] ?? null);
+
     $bmi = usemed_ai_float($latestVisit['bmi'] ?? null);
     if ($bmi === null) { $bmi = usemed_ai_float($self['bmi'] ?? null); }
     if ($bmi === null) { $bmi = usemed_ai_float($patient['bmi'] ?? null); }
@@ -345,6 +348,8 @@ function usemed_ai_extract_features(array $patient): array
         'diastolic' => $dbp,
         'glucose' => $glucose,
         'hba1c' => $hba1c,
+        'ldl' => $ldl,
+        'cholesterol' => $cholesterol,
         'bmi' => $bmi,
         'weight_kg' => $weight,
         'height_cm' => $height,
@@ -462,6 +467,10 @@ function usemed_ai_call_ml_service(array $patient, array $features): ?array
         'systolic' => $features['systolic'],
         'diastolic' => $features['diastolic'],
         'hba1c' => $features['hba1c'],
+        'bmi' => $features['bmi'],
+        'glucose' => $features['glucose'],
+        'ldl' => $features['ldl'] ?? null,
+        'cholesterol' => $features['cholesterol'] ?? null,
         'c_peptide' => null,
         'history_systolic' => [], // Would be populated from patient_longitudinal_records
         'history_hba1c' => $features['hba1c_trend'] ?? [],
@@ -470,6 +479,11 @@ function usemed_ai_call_ml_service(array $patient, array $features): ?array
         'med_ccb' => strpos(strtolower($features['additional_medication'] ?? ''), 'amlodipine') !== false ? 1 : 0,
         'med_arb' => strpos(strtolower($features['additional_medication'] ?? ''), 'losartan') !== false ? 1 : 0,
         'med_acei' => strpos(strtolower($features['additional_medication'] ?? ''), 'enalapril') !== false ? 1 : 0,
+        'co_dm' => str_contains(strtolower((string)($features['disease_text'] ?? '')), 'diabetes') ? 1 : 0,
+        'co_ht' => str_contains(strtolower((string)($features['disease_text'] ?? '')), 'hypertension') ? 1 : 0,
+        'co_ckd' => str_contains(strtolower((string)($features['disease_text'] ?? '')), 'ckd') ? 1 : 0,
+        'co_stroke' => str_contains(strtolower((string)($features['disease_text'] ?? '')), 'stroke') ? 1 : 0,
+        'co_cad' => (str_contains(strtolower((string)($features['disease_text'] ?? '')), 'cad') || str_contains(strtolower((string)($features['disease_text'] ?? '')), 'nstemi')) ? 1 : 0,
     ];
 
     $url = function_exists('envv') ? (string) envv('USEMED_ML_URL', 'http://127.0.0.1:8000/predict') : 'http://127.0.0.1:8000/predict';
@@ -500,10 +514,69 @@ function usemed_ai_call_ml_service(array $patient, array $features): ?array
     if ($response) {
         $decoded = json_decode($response, true);
         if (is_array($decoded)) {
+            if (array_key_exists('model_available', $decoded) && !$decoded['model_available']) {
+                return null;
+            }
             return $decoded;
         }
     }
     return null;
+}
+
+function ai_predict_risk_with_ml(array $data, array $patient = []): array
+{
+    $features = [
+        'age' => is_numeric($data['age'] ?? null) ? (float) $data['age'] : 0,
+        'gender' => (string) ($patient['gender'] ?? 'Unknown'),
+        'disease_text' => (string) ($patient['disease'] ?? 'Diabetes Hypertension'),
+        'systolic' => is_numeric($data['systolic'] ?? null) ? (float) $data['systolic'] : null,
+        'diastolic' => is_numeric($data['diastolic'] ?? null) ? (float) $data['diastolic'] : null,
+        'hba1c' => is_numeric($data['hba1c'] ?? null) ? (float) $data['hba1c'] : null,
+        'bmi' => is_numeric($data['bmi'] ?? null) ? (float) $data['bmi'] : null,
+        'glucose' => is_numeric($data['glucose'] ?? null) ? (float) $data['glucose'] : null,
+        'cholesterol' => is_numeric($data['cholesterol'] ?? null) ? (float) $data['cholesterol'] : null,
+        'ldl' => is_numeric($data['ldl'] ?? null) ? (float) $data['ldl'] : null,
+        'hba1c_trend' => [],
+        'additional_medication' => (string) ($patient['current_medications'] ?? ''),
+    ];
+
+    $ml = usemed_ai_call_ml_service($patient, $features);
+    if (!$ml) {
+        return [
+            'score' => 0,
+            'level' => 'Unavailable',
+            'level_th' => 'ML unavailable',
+            'color' => 'gray',
+            'summary' => 'XGBoost model artifacts or ML service are not available yet. Train the model and start ml_service before using live prediction.',
+            'factors' => ['ML service unavailable'],
+            'recommendations' => ['Run ml_service/models/train.py, start the FastAPI service, then retry prediction.'],
+            'model_available' => false,
+            'model_version' => 'unavailable',
+        ];
+    }
+
+    $score = max(0, min(100, (int) round((float) ($ml['risk_score'] ?? 0))));
+    $priority = (string) ($ml['overall_priority'] ?? 'P3');
+    $level = $priority === 'P1' ? 'High' : ($priority === 'P2' ? 'Medium' : 'Low');
+    $levelTh = $priority === 'P1' ? 'High ML risk' : ($priority === 'P2' ? 'Medium ML risk' : 'Low ML risk');
+    $color = $priority === 'P1' ? 'red' : ($priority === 'P2' ? 'orange' : 'green');
+    $recommendation = (string) ($ml['recommendation'] ?? 'Continue monitoring and follow-up.');
+    $factors = array_values(array_filter(array_map('strval', (array) ($ml['top_factors'] ?? []))));
+    if (!$factors) {
+        $factors[] = 'XGBoost prediction';
+    }
+
+    return [
+        'score' => $score,
+        'level' => $level,
+        'level_th' => $levelTh,
+        'color' => $color,
+        'summary' => $recommendation,
+        'factors' => $factors,
+        'recommendations' => [$recommendation],
+        'model_available' => true,
+        'model_version' => (string) ($ml['model_version'] ?? 'usemed-xgb-agent-v1'),
+    ];
 }
 
 function usemed_ai_score_patient(array $patient, bool $persist = true): array
@@ -666,7 +739,26 @@ function usemed_ai_score_patient(array $patient, bool $persist = true): array
     // --- ML Service Integration (Phase 3) ---
     $mlResult = usemed_ai_call_ml_service($patient, $features);
     if ($mlResult) {
-        $score += (int) ($mlResult['overall_score_modifier'] ?? 0);
+        if (isset($mlResult['risk_score'])) {
+            $score = max(0, min(100, (int) round((float) $mlResult['risk_score'])));
+        }
+
+        $mlPriority = (string) ($mlResult['overall_priority'] ?? '');
+        if (in_array($mlPriority, ['P1', 'P2', 'P3'], true)) {
+            $priority = match ($mlPriority) {
+                'P1' => ['priority' => 'P1', 'level' => 'ML: ต้องดูวันนี้', 'sla' => 'ภายในวันนี้', 'badge' => 'red'],
+                'P2' => ['priority' => 'P2', 'level' => 'ML: ติดตามก่อน', 'sla' => 'ภายใน 3 วัน', 'badge' => 'orange'],
+                default => ['priority' => 'P3', 'level' => 'ML: ติดตามตามรอบ', 'sla' => 'ตามนัด/ภายใน 1-4 สัปดาห์', 'badge' => 'green'],
+            };
+        }
+
+        if (!empty($mlResult['recommendation'])) {
+            $actions[] = "ML: " . $mlResult['recommendation'];
+        }
+
+        foreach ((array) ($mlResult['top_factors'] ?? []) as $factor) {
+            usemed_ai_add_reason($reasons, 'ml_factor', 'ML top factor: ' . (string) $factor, (string) $factor, '', 0, 'ml_model');
+        }
         
         if (!empty($mlResult['diabetes_recommendation'])) {
             $actions[] = "🤖 ML Suggestion [Diabetes]: " . $mlResult['diabetes_recommendation'];
@@ -685,6 +777,8 @@ function usemed_ai_score_patient(array $patient, bool $persist = true): array
     }
     // ----------------------------------------
 
+    $modelVersion = !empty($mlResult['model_version']) ? (string) $mlResult['model_version'] : 'legacy-rule-fallback-v1';
+
     $result = [
         'score' => $score,
         'priority' => $priority['priority'],
@@ -697,7 +791,7 @@ function usemed_ai_score_patient(array $patient, bool $persist = true): array
         'features' => $features,
         'cohort_tags' => $tags,
         'trajectory_status' => $trajectory,
-        'model_version' => 'usemed-pop-health-rule-v1',
+        'model_version' => $modelVersion,
     ];
 
     if ($persist && db_is_connected() && !empty($patient['id'])) {

@@ -97,7 +97,7 @@ topbar(
                     <strong>AI Alert</strong>
                     <span>คัดกรองผู้ป่วยความเสี่ยงสูง</span>
                 </div>
-                <span class="badge orange">Rule-based</span>
+                <span class="badge orange">XGBoost</span>
             </div>
 
             <div class="document-card">

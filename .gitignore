@@ -1,3 +1,30 @@
 .agents
 backend/config/local.php
 backend/config.local.php
+
+# Python/runtime cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local virtual environments and temporary ML dependency folders
+.venv/
+venv/
+env/
+.codex_ml_venv/
+.codex_ml_deps/
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local logs
+*.log
+
+# Generated ML model binaries are trained during Docker build/startup.
+ml_service/models/artifacts/

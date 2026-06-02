@@ -20,7 +20,7 @@ $formData = [
     'cholesterol' => 218,
 ];
 
-$risk = ai_calculate_risk($formData);
+$risk = ai_predict_risk_with_ml($formData, $patient);
 
 if (is_post()) {
     $formData = [
@@ -33,7 +33,7 @@ if (is_post()) {
         'cholesterol' => (float) ($_POST['cholesterol'] ?? 0),
     ];
 
-    $risk = ai_calculate_risk($formData);
+    $risk = ai_predict_risk_with_ml($formData, $patient);
 }
 
 page_start('AI Risk', 'doctor', 'ai');
@@ -55,7 +55,7 @@ topbar(
     <div class="form-card">
         <h2>กรอกข้อมูลเพื่อประเมิน</h2>
         <p class="text-muted">
-            ระบบนี้เป็น Rule-based AI สำหรับ Demo ใช้ประกอบการคัดกรองเบื้องต้น
+            Powered by the trained XGBoost ML service. If the model is offline, this page reports ML unavailable instead of falling back to the old rule engine.
         </p>
 
         <form method="post" class="mt-2">
@@ -202,7 +202,7 @@ topbar(
                         <strong>Recommendation</strong>
                         <span><?= e($recommendation) ?></span>
                     </div>
-                    <span class="badge blue">AI</span>
+                    <span class="badge blue">XGBoost</span>
                 </div>
             <?php endforeach; ?>
         </div>

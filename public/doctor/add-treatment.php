@@ -195,7 +195,7 @@ if (is_post()) {
         }
     }
 
-    $risk = ai_calculate_risk([
+    $risk = ai_predict_risk_with_ml([
         'age' => (int) ($patientForRisk['age'] ?? 0),
         'systolic' => $systolic,
         'diastolic' => $diastolic,
@@ -203,7 +203,7 @@ if (is_post()) {
         'hba1c' => $hba1c,
         'bmi' => $bmi,
         'cholesterol' => $cholesterol,
-    ]);
+    ], $patientForRisk);
 
     $savedToDb = false;
     $visitId = null;

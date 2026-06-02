@@ -108,12 +108,87 @@ function phm_fast_assessment(array $p): array
     ];
 }
 
+function phm_cached_ml_assessment(array $p): ?array
+{
+    if (!db_is_connected()) {
+        return null;
+    }
+
+    $patientId = (int) ($p['id'] ?? 0);
+    $hn = (string) ($p['hn'] ?? '');
+    $params = [];
+    $where = [];
+    if ($patientId > 0) {
+        $where[] = 'patient_id = :patient_id';
+        $params['patient_id'] = $patientId;
+    }
+    if ($hn !== '') {
+        $where[] = 'hn = :hn';
+        $params['hn'] = $hn;
+    }
+    if (!$where) {
+        return null;
+    }
+
+    $score = db_fetch_one(
+        'SELECT * FROM ai_population_scores WHERE ' . implode(' OR ', $where) . ' ORDER BY calculated_at DESC LIMIT 1',
+        $params
+    );
+    if (!$score || !str_starts_with((string) ($score['model_version'] ?? ''), 'usemed-xgb')) {
+        return null;
+    }
+
+    $reasons = db_fetch_all(
+        'SELECT reason_type, reason_text, source_feature, source_value, source_table, contribution
+         FROM ai_population_reasons
+         WHERE patient_id = :patient_id OR hn = :hn
+         ORDER BY contribution DESC, id ASC
+         LIMIT 8',
+        ['patient_id' => (int) ($score['patient_id'] ?? 0), 'hn' => (string) ($score['hn'] ?? '')]
+    );
+    $reasonRows = [];
+    foreach ($reasons as $reason) {
+        $reasonRows[] = [
+            'type' => (string) ($reason['reason_type'] ?? 'ml_factor'),
+            'text' => (string) ($reason['reason_text'] ?? ''),
+            'source_feature' => (string) ($reason['source_feature'] ?? 'ml_model'),
+            'source_value' => (string) ($reason['source_value'] ?? ''),
+            'source_table' => (string) ($reason['source_table'] ?? 'ml_prediction'),
+            'weight' => (int) ($reason['contribution'] ?? 0),
+        ];
+    }
+
+    $priority = (string) ($score['priority_level'] ?? 'P3');
+    $featureSnapshot = json_decode((string) ($score['feature_snapshot'] ?? '{}'), true);
+    $actions = array_values(array_filter(array_map('trim', explode("\n", (string) ($score['recommendation_summary'] ?? '')))));
+    $tags = array_values(array_filter(array_map('trim', explode(',', (string) ($score['cohort_tags'] ?? '')))));
+
+    return [
+        'score' => (int) ($score['risk_score'] ?? 0),
+        'priority' => $priority,
+        'level' => (string) ($score['priority_label'] ?? $priority),
+        'sla' => (string) ($score['recommended_sla'] ?? ''),
+        'badge' => $priority === 'P1' ? 'red' : ($priority === 'P2' ? 'orange' : 'green'),
+        'reasons_detail' => $reasonRows,
+        'actions' => $actions,
+        'features' => is_array($featureSnapshot) ? $featureSnapshot : [],
+        'cohort_tags' => $tags,
+        'trajectory_status' => (string) ($score['trajectory_status'] ?? ''),
+        'model_version' => (string) ($score['model_version'] ?? 'usemed-xgb-agent-v1'),
+    ];
+}
+
 function phm_assessment(array $p): array
 {
     static $cache = [];
     $key = (string) ($p['id'] ?? $p['hn'] ?? md5(json_encode($p)));
     if (isset($cache[$key])) {
         return $cache[$key];
+    }
+
+    $cachedMl = phm_cached_ml_assessment($p);
+    if ($cachedMl) {
+        return $cache[$key] = $cachedMl;
     }
 
     if (!isset($_GET['deep_ai']) || (string) $_GET['deep_ai'] !== '1') {
