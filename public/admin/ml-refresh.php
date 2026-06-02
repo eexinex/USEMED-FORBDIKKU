@@ -17,6 +17,7 @@ $autoRun = ((string) ($_GET['auto'] ?? $_POST['auto'] ?? '0')) === '1';
 $processed = 0;
 $mlBacked = 0;
 $fallback = 0;
+$batchRan = false;
 $errors = [];
 
 $totalPatients = 0;
@@ -34,10 +35,11 @@ if (db_is_connected()) {
     $cachedMl = (int) ($cachedMlRow['total'] ?? 0);
 }
 
-if (is_post() && db_is_connected()) {
+if ((is_post() || $autoRun) && db_is_connected() && $offset < $totalPatients) {
     $patients = db_fetch_all(
         'SELECT * FROM patients ORDER BY id ASC LIMIT ' . $limit . ' OFFSET ' . $offset
     );
+    $batchRan = true;
 
     foreach ($patients as $patient) {
         try {
@@ -62,7 +64,7 @@ if (is_post() && db_is_connected()) {
 }
 
 $nextOffset = min($totalPatients, $offset + $limit);
-$buttonOffset = is_post() ? $nextOffset : $offset;
+$buttonOffset = $batchRan ? $nextOffset : $offset;
 $buttonEnd = min($totalPatients, $buttonOffset + $limit);
 $isCacheReady = $totalPatients > 0 && $cachedAny >= $totalPatients;
 $isMlComplete = $totalPatients > 0 && $cachedMl >= $totalPatients;
@@ -196,6 +198,14 @@ if ($autoRun && db_is_connected() && !$isMlComplete && $buttonOffset < $totalPat
                 form.submit();
             }, 650);
         });
+    </script>
+    <script>
+        (function () {
+            var nextUrl = <?= json_encode(app_url('admin/ml-refresh.php?auto=1&limit=' . urlencode((string) $limit) . '&offset=' . urlencode((string) $buttonOffset)), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+            window.setTimeout(function () {
+                window.location.assign(nextUrl);
+            }, 1200);
+        })();
     </script>
 <?php endif;
 page_end();
