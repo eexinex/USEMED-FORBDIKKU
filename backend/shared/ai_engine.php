@@ -121,8 +121,14 @@ function ai_demo_result(): array
 
 function usemed_ai_ensure_population_schema(): void
 {
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+
     $lockFile = sys_get_temp_dir() . '/usemed_ai_schema_done.lock';
     if (file_exists($lockFile)) {
+        $checked = true;
         return;
     }
 
@@ -182,7 +188,8 @@ function usemed_ai_ensure_population_schema(): void
     )");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_patient ON followup_tasks (patient_id)");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_status ON followup_tasks (status)");
-    file_put_contents($lockFile, '1');
+    @file_put_contents($lockFile, '1');
+    $checked = true;
 }
 
 function usemed_ai_float($value): ?float
@@ -428,6 +435,17 @@ function usemed_ai_trajectory_status(array $features, int $score): string
 
 function usemed_ai_call_ml_service(array $patient, array $features): ?array
 {
+    static $temporarilyUnavailable = false;
+
+    if ($temporarilyUnavailable || !function_exists('curl_init')) {
+        return null;
+    }
+
+    $disabled = function_exists('envv') ? (string) envv('USEMED_ML_ENABLED', '1') : '1';
+    if (in_array(strtolower($disabled), ['0', 'false', 'off', 'no'], true)) {
+        return null;
+    }
+
     // Mapping features to the Python ML API format
     $payload = [
         'hn' => (string) ($patient['hn'] ?? 'Unknown'),
@@ -447,19 +465,32 @@ function usemed_ai_call_ml_service(array $patient, array $features): ?array
         'med_acei' => strpos(strtolower($features['additional_medication'] ?? ''), 'enalapril') !== false ? 1 : 0,
     ];
 
-    $ch = curl_init('http://127.0.0.1:8000/predict');
+    $url = function_exists('envv') ? (string) envv('USEMED_ML_URL', 'http://127.0.0.1:8000/predict') : 'http://127.0.0.1:8000/predict';
+    $ch = curl_init($url);
+    if ($ch === false) {
+        $temporarilyUnavailable = true;
+        return null;
+    }
+
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 1); // Prevent UI hanging if ML service is down
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0); // Fail fast if service unreachable
+    curl_setopt($ch, CURLOPT_NOSIGNAL, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 450);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 150);
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_errno($ch);
     curl_close($ch);
 
-    if ($httpCode === 200 && $response) {
+    if ($curlError !== 0 || $httpCode < 200 || $httpCode >= 300) {
+        $temporarilyUnavailable = true;
+        return null;
+    }
+
+    if ($response) {
         $decoded = json_decode($response, true);
         if (is_array($decoded)) {
             return $decoded;

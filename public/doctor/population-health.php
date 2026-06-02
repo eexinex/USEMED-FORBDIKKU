@@ -8,6 +8,9 @@ require_once __DIR__ . '/../../backend/shared/layout.php';
 require_once __DIR__ . '/../../backend/shared/ai_engine.php';
 
 require_login('doctor');
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
 usemed_ensure_extended_schema();
 usemed_seed_demo_data();
 usemed_ai_ensure_population_schema();
@@ -37,7 +40,8 @@ function phm_assessment(array $p): array
         return $cache[$key];
     }
 
-    $ai = usemed_ai_score_patient($p, true);
+    $persist = isset($_GET['refresh_ai']) && (string) $_GET['refresh_ai'] === '1';
+    $ai = usemed_ai_score_patient($p, $persist);
     $cache[$key] = [
         'score' => (int) ($ai['score'] ?? 0),
         'priority' => (string) ($ai['priority'] ?? 'P3'),
