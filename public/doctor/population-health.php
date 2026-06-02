@@ -32,12 +32,92 @@ function phm_float($value): ?float
     return is_numeric($value) ? (float) $value : null;
 }
 
+function phm_fast_assessment(array $p): array
+{
+    $score = (int) ($p['risk_score'] ?? 0);
+    $age = (int) ($p['age'] ?? 0);
+    $area = (string) ($p['care_area'] ?? 'OPD');
+    $disease = mb_strtolower((string) ($p['disease'] ?? ''), 'UTF-8');
+
+    if ($score <= 0) {
+        $score = 20;
+        if ($age >= 75) { $score += 18; }
+        elseif ($age >= 60) { $score += 10; }
+        if (str_contains($disease, 'diabetes') || str_contains($disease, 'gdm') || str_contains($disease, 'เบาหวาน')) { $score += 12; }
+        if (str_contains($disease, 'hypertension') || str_contains($disease, 'ความดัน')) { $score += 10; }
+        if (str_contains($disease, 'ckd') || str_contains($disease, 'ไต')) { $score += 12; }
+        if (str_contains($disease, 'stroke') || str_contains($disease, 'nstemi') || str_contains($disease, 'copd')) { $score += 14; }
+        if ($area === 'ICU') { $score += 24; }
+        elseif ($area === 'IPD') { $score += 14; }
+        if (!empty($p['high_watch'])) { $score += 18; }
+    }
+
+    $score = max(0, min(100, $score));
+    $recommendation = function_exists('usemed_population_recommendation')
+        ? usemed_population_recommendation(array_merge($p, ['risk_score' => $score]))
+        : ['priority' => 'P3', 'level' => 'ติดตามตามรอบ', 'reasons' => [], 'actions' => []];
+
+    $tags = [];
+    if (str_contains($disease, 'diabetes') || str_contains($disease, 'gdm') || str_contains($disease, 'เบาหวาน')) { $tags[] = 'เบาหวาน'; }
+    if (str_contains($disease, 'hypertension') || str_contains($disease, 'ความดัน')) { $tags[] = 'ความดัน'; }
+    if (str_contains($disease, 'ckd') || str_contains($disease, 'ไต')) { $tags[] = 'ไต'; }
+
+    $priority = (string) ($recommendation['priority'] ?? 'P3');
+    $sla = $priority === 'P1' ? 'วันนี้' : ($priority === 'P2' ? 'ภายใน 3 วัน' : 'ตามนัด');
+    $badge = $priority === 'P1' ? 'red' : ($priority === 'P2' ? 'orange' : 'green');
+    $reasons = [];
+    foreach ((array) ($recommendation['reasons'] ?? []) as $reason) {
+        $reasons[] = [
+            'type' => 'overview',
+            'text' => (string) $reason,
+            'source_feature' => 'patients',
+            'source_value' => '',
+            'source_table' => 'patients',
+            'weight' => 0,
+        ];
+    }
+
+    return [
+        'score' => $score,
+        'priority' => $priority,
+        'level' => (string) ($recommendation['level'] ?? 'ติดตามตามรอบ'),
+        'sla' => $sla,
+        'badge' => $badge,
+        'reasons_detail' => $reasons,
+        'actions' => array_values(array_unique((array) ($recommendation['actions'] ?? []))),
+        'features' => [
+            'age' => $age,
+            'gender' => (string) ($p['gender'] ?? ''),
+            'disease_text' => (string) ($p['disease'] ?? ''),
+            'disease_key' => $disease,
+            'care_area' => $area,
+            'high_watch' => !empty($p['high_watch']),
+            'patient_risk_score' => $score,
+            'systolic' => phm_float($p['systolic'] ?? null),
+            'diastolic' => phm_float($p['diastolic'] ?? null),
+            'hba1c' => phm_float($p['hba1c'] ?? null),
+            'bmi' => phm_float($p['bmi'] ?? null),
+            'bp_high_recent_count' => 0,
+            'recent_visit_180d' => 0,
+            'smoking_status' => (string) ($p['smoking_status'] ?? ''),
+            'alcohol_use' => (string) ($p['alcohol_use'] ?? ''),
+        ],
+        'cohort_tags' => array_values(array_unique($tags)),
+        'trajectory_status' => $priority === 'P1' ? 'ต้องติดตามเร่งด่วน' : ($priority === 'P2' ? 'ควรติดตามระยะสั้น' : 'คงที่/ติดตามตามรอบ'),
+        'model_version' => 'usemed-pop-health-fast-v1',
+    ];
+}
+
 function phm_assessment(array $p): array
 {
     static $cache = [];
     $key = (string) ($p['id'] ?? $p['hn'] ?? md5(json_encode($p)));
     if (isset($cache[$key])) {
         return $cache[$key];
+    }
+
+    if (!isset($_GET['deep_ai']) || (string) $_GET['deep_ai'] !== '1') {
+        return $cache[$key] = phm_fast_assessment($p);
     }
 
     $persist = isset($_GET['refresh_ai']) && (string) $_GET['refresh_ai'] === '1';
@@ -275,8 +355,11 @@ function phm_cohort_stats(string $key, string $label, array $patients): array
 }
 
 $patients = demo_patients();
+$dbTotalPatients = null;
 if (db_is_connected()) {
-    $rows = db_fetch_all('SELECT * FROM patients ORDER BY high_watch DESC, risk_score DESC, id ASC');
+    $countRow = db_fetch_one('SELECT COUNT(*) AS total FROM patients');
+    $dbTotalPatients = isset($countRow['total']) ? (int) $countRow['total'] : null;
+    $rows = db_fetch_all('SELECT * FROM patients ORDER BY high_watch DESC, risk_score DESC, id ASC LIMIT 500');
     if ($rows) {
         $patients = $rows;
     }
@@ -308,7 +391,7 @@ usort($filtered, function (array $a, array $b): int {
     return [$order[$aa['priority']] ?? 9, -$aa['score'], (string)($a['hn'] ?? '')] <=> [$order[$bb['priority']] ?? 9, -$bb['score'], (string)($b['hn'] ?? '')];
 });
 
-$totalAll = count($patients);
+$totalAll = $dbTotalPatients ?? count($patients);
 $total = count($filtered);
 $assessments = array_map('phm_assessment', $filtered);
 $p1 = count(array_filter($assessments, fn($a) => $a['priority'] === 'P1'));

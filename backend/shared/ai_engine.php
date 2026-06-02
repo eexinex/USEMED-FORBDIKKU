@@ -126,6 +126,13 @@ function usemed_ai_ensure_population_schema(): void
         return;
     }
 
+    $runMaintenance = function_exists('envv') ? (string) envv('USEMED_AUTO_SCHEMA', '0') : '0';
+    $manualRun = isset($_GET['sync_schema']) && (string) $_GET['sync_schema'] === '1';
+    if (!$manualRun && in_array(strtolower($runMaintenance), ['0', 'false', 'off', 'no'], true)) {
+        $checked = true;
+        return;
+    }
+
     $lockFile = sys_get_temp_dir() . '/usemed_ai_schema_done.lock';
     if (file_exists($lockFile)) {
         $checked = true;

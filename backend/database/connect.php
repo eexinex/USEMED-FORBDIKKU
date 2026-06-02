@@ -18,6 +18,11 @@ function db(): ?PDO
         return null;
     }
 
+    if (DB_HOST === '' || DB_NAME === '' || DB_USER === '') {
+        $failed = true;
+        return null;
+    }
+
     try {
         $host = DB_HOST;
         $port = defined('DB_PORT') && DB_PORT !== '' ? DB_PORT : '5432';
@@ -29,7 +34,7 @@ function db(): ?PDO
         }
 
         $dsn = sprintf(
-            'pgsql:host=%s;port=%s;dbname=%s;connect_timeout=3',
+            'pgsql:host=%s;port=%s;dbname=%s;connect_timeout=1',
             $host,
             $port,
             DB_NAME
@@ -39,8 +44,14 @@ function db(): ?PDO
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_TIMEOUT => 3,
+            PDO::ATTR_TIMEOUT => 1,
         ]);
+
+        try {
+            $pdo->exec('SET statement_timeout = 2000');
+        } catch (Throwable $e) {
+            // Some PostgreSQL-compatible providers may not support this setting.
+        }
 
         return $pdo;
     } catch (Throwable $e) {

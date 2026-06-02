@@ -211,6 +211,13 @@ function require_login(?string $role = null): void
         flash_set('danger', 'คุณไม่มีสิทธิ์เข้าหน้านี้');
         redirect_to('index.php');
     }
+    if (
+        strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' &&
+        empty($_SESSION['flash']) &&
+        session_status() === PHP_SESSION_ACTIVE
+    ) {
+        session_write_close();
+    }
 }
 
 function logout_and_redirect(): void

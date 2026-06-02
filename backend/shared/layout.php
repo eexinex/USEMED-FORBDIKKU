@@ -776,8 +776,21 @@ function usemed_insert_available(string $table, array $data): bool
 
 function usemed_ensure_extended_schema(): void
 {
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+
+    $runMaintenance = function_exists('envv') ? (string) envv('USEMED_AUTO_SCHEMA', '0') : '0';
+    $manualRun = isset($_GET['sync_schema']) && (string) $_GET['sync_schema'] === '1';
+    if (!$manualRun && in_array(strtolower($runMaintenance), ['0', 'false', 'off', 'no'], true)) {
+        $checked = true;
+        return;
+    }
+
     $lockFile = sys_get_temp_dir() . '/usemed_schema_done.lock';
     if (file_exists($lockFile)) {
+        $checked = true;
         return;
     }
 
@@ -1052,13 +1065,27 @@ function usemed_ensure_extended_schema(): void
     )");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_patient ON followup_tasks (patient_id)");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_status ON followup_tasks (status)");
-    file_put_contents($lockFile, '1');
+    @file_put_contents($lockFile, '1');
+    $checked = true;
 }
 
 function usemed_seed_demo_data(): void
 {
+    static $checked = false;
+    if ($checked) {
+        return;
+    }
+
+    $runSeed = function_exists('envv') ? (string) envv('USEMED_AUTO_SEED', '0') : '0';
+    $manualRun = isset($_GET['seed_demo']) && (string) $_GET['seed_demo'] === '1';
+    if (!$manualRun && in_array(strtolower($runSeed), ['0', 'false', 'off', 'no'], true)) {
+        $checked = true;
+        return;
+    }
+
     $lockFile = sys_get_temp_dir() . '/usemed_seed_done.lock';
     if (file_exists($lockFile)) {
+        $checked = true;
         return;
     }
 
@@ -1148,7 +1175,8 @@ function usemed_seed_demo_data(): void
         );
     }
 
-    file_put_contents($lockFile, '1');
+    @file_put_contents($lockFile, '1');
+    $checked = true;
 }
 
 
