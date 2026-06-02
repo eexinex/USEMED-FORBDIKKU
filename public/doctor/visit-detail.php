@@ -309,92 +309,92 @@ topbar(
 
 <details class="collapsible-card">
     <summary>
-        <span class="summary-title"><span class="summary-icon">🩺</span> ผลวินิจฉัยและแผนการรักษา (Diagnosis & Treatment)</span>
+        <span class="summary-title"><span class="summary-icon">🩺</span> ผลการวินิจฉัยโรค (Diagnosis)</span>
     </summary>
     <div class="collapsible-body">
-        <div class="grid grid-2">
-            <div class="card">
-                <h2>Diagnosis</h2>
+        <div class="note-box mt-2">
+            <?= nl2br(e($diagnosis)) ?>
+        </div>
+    </div>
+</details>
 
-                <div class="note-box mt-2">
-                    <?= nl2br(e($diagnosis)) ?>
+<details class="collapsible-card">
+    <summary>
+        <span class="summary-title"><span class="summary-icon">📋</span> แผนรักษาและสรุปอาการ (Treatment Plan & Summary)</span>
+    </summary>
+    <div class="collapsible-body">
+        <h2>Treatment Plan</h2>
+        <div class="note-box mt-2">
+            <?= nl2br(e($treatmentPlan)) ?>
+        </div>
+
+        <h2 class="mt-2">Summary</h2>
+        <p><?= nl2br(e($summary)) ?></p>
+    </div>
+</details>
+
+<details class="collapsible-card">
+    <summary>
+        <span class="summary-title"><span class="summary-icon">📊</span> สัญญาณชีพและผลตรวจพื้นฐาน (Vital Signs & Basic Lab)</span>
+    </summary>
+    <div class="collapsible-body">
+        <div class="document-grid">
+            <div class="document-card">
+                <div>
+                    <strong>Blood Pressure</strong>
+                    <span><?= e($systolic) ?>/<?= e($diastolic) ?> mmHg</span>
                 </div>
-
-                <h2 class="mt-2">Treatment Plan</h2>
-
-                <div class="note-box mt-2">
-                    <?= nl2br(e($treatmentPlan)) ?>
-                </div>
-
-                <h2 class="mt-2">Summary</h2>
-
-                <p>
-                    <?= nl2br(e($summary)) ?>
-                </p>
+                <span class="badge <?= ((int) $systolic >= 140 || (int) $diastolic >= 90) ? 'orange' : 'green' ?>">
+                    BP
+                </span>
             </div>
 
-            <div class="card">
-                <h2>Vital Signs / Lab</h2>
-
-                <div class="document-grid mt-2">
-                    <div class="document-card">
-                        <div>
-                            <strong>Blood Pressure</strong>
-                            <span><?= e($systolic) ?>/<?= e($diastolic) ?> mmHg</span>
-                        </div>
-                        <span class="badge <?= ((int) $systolic >= 140 || (int) $diastolic >= 90) ? 'orange' : 'green' ?>">
-                            BP
-                        </span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>Pulse</strong>
-                            <span><?= e($pulse) ?> bpm</span>
-                        </div>
-                        <span class="badge blue">Pulse</span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>Glucose</strong>
-                            <span><?= e($glucose) ?> mg/dL</span>
-                        </div>
-                        <span class="badge <?= ((float) $glucose >= 126) ? 'orange' : 'green' ?>">
-                            Sugar
-                        </span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>HbA1c</strong>
-                            <span><?= e($hba1c) ?>%</span>
-                        </div>
-                        <span class="badge <?= ((float) $hba1c >= 7) ? 'orange' : 'green' ?>">
-                            HbA1c
-                        </span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>BMI</strong>
-                            <span><?= e($bmi) ?></span>
-                        </div>
-                        <span class="badge <?= ((float) $bmi >= 25) ? 'orange' : 'green' ?>">
-                            BMI
-                        </span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>Cholesterol</strong>
-                            <span><?= e($cholesterol) ?> mg/dL</span>
-                        </div>
-                        <span class="badge <?= ((float) $cholesterol >= 240) ? 'red' : 'blue' ?>">
-                            Lipid
-                        </span>
-                    </div>
+            <div class="document-card">
+                <div>
+                    <strong>Pulse</strong>
+                    <span><?= e($pulse) ?> bpm</span>
                 </div>
+                <span class="badge blue">Pulse</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>Glucose</strong>
+                    <span><?= e($glucose) ?> mg/dL</span>
+                </div>
+                <span class="badge <?= ((float) $glucose >= 126) ? 'orange' : 'green' ?>">
+                    Sugar
+                </span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>HbA1c</strong>
+                    <span><?= e($hba1c) ?>%</span>
+                </div>
+                <span class="badge <?= ((float) $hba1c >= 7) ? 'orange' : 'green' ?>">
+                    HbA1c
+                </span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>BMI</strong>
+                    <span><?= e($bmi) ?></span>
+                </div>
+                <span class="badge <?= ((float) $bmi >= 25) ? 'orange' : 'green' ?>">
+                    BMI
+                </span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>Cholesterol</strong>
+                    <span><?= e($cholesterol) ?> mg/dL</span>
+                </div>
+                <span class="badge <?= ((float) $cholesterol >= 240) ? 'red' : 'blue' ?>">
+                    Lipid
+                </span>
             </div>
         </div>
     </div>
@@ -402,72 +402,40 @@ topbar(
 
 <details class="collapsible-card">
     <summary>
-        <span class="summary-title"><span class="summary-icon">📋</span> ข้อมูลผู้ป่วยและเอกสาร (Patient Info & Documents)</span>
+        <span class="summary-title"><span class="summary-icon">👤</span> ข้อมูลผู้ป่วย (Patient Profile)</span>
     </summary>
     <div class="collapsible-body">
-        <div class="grid grid-2">
-            <div class="card">
-                <h2>ข้อมูลผู้ป่วย</h2>
-
-                <div class="document-grid mt-2">
-                    <div class="document-card">
-                        <div>
-                            <strong><?= e($patient['full_name'] ?? '-') ?></strong>
-                            <span>HN: <?= e($patient['hn'] ?? '-') ?></span>
-                        </div>
-                        <span class="badge blue">Profile</span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>อายุ / เพศ</strong>
-                            <span><?= e($patient['age'] ?? '-') ?> ปี / <?= e($patient['gender'] ?? '-') ?></span>
-                        </div>
-                        <span class="badge green">Info</span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>โรคประจำตัว</strong>
-                            <span><?= e($patient['disease'] ?? '-') ?></span>
-                        </div>
-                        <span class="badge red">Chronic</span>
-                    </div>
-
-                    <div class="document-card">
-                        <div>
-                            <strong>เบอร์โทร</strong>
-                            <span><?= e($patient['phone'] ?? '-') ?></span>
-                        </div>
-                        <span class="badge orange">Contact</span>
-                    </div>
+        <div class="document-grid">
+            <div class="document-card">
+                <div>
+                    <strong><?= e($patient['full_name'] ?? '-') ?></strong>
+                    <span>HN: <?= e($patient['hn'] ?? '-') ?></span>
                 </div>
+                <span class="badge blue">Profile</span>
             </div>
 
-            <div class="card">
-                <h2>เอกสารที่เกี่ยวข้อง</h2>
+            <div class="document-card">
+                <div>
+                    <strong>อายุ / เพศ</strong>
+                    <span><?= e($patient['age'] ?? '-') ?> ปี / <?= e($patient['gender'] ?? '-') ?></span>
+                </div>
+                <span class="badge green">Info</span>
+            </div>
 
-                <?php if (empty($documents)): ?>
-                    <?php render_empty_state('ยังไม่มีเอกสาร', 'ยังไม่มีเอกสารที่เกี่ยวข้องกับ Visit นี้'); ?>
-                <?php else: ?>
-                    <div class="document-grid mt-2">
-                        <?php foreach ($documents as $doc): ?>
-                            <?php
-                            $docId = (int) ($doc['id'] ?? 1);
-                            $docTitle = $doc['title'] ?? 'เอกสารสุขภาพ';
-                            $docType = $doc['document_type'] ?? $doc['type'] ?? 'PDF';
-                            $docDate = $doc['created_at'] ?? $doc['date'] ?? '-';
-                            ?>
-                            <a class="document-card" href="<?= e(app_url('doctor/document-view.php?id=' . $docId)) ?>">
-                                <div>
-                                    <strong><?= e($docTitle) ?></strong>
-                                    <span><?= e($docDate) ?></span>
-                                </div>
-                                <span class="badge blue"><?= e($docType) ?></span>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
+            <div class="document-card">
+                <div>
+                    <strong>โรคประจำตัว</strong>
+                    <span><?= e($patient['disease'] ?? '-') ?></span>
+                </div>
+                <span class="badge red">Chronic</span>
+            </div>
+
+            <div class="document-card">
+                <div>
+                    <strong>เบอร์โทร</strong>
+                    <span><?= e($patient['phone'] ?? '-') ?></span>
+                </div>
+                <span class="badge orange">Contact</span>
             </div>
         </div>
     </div>
@@ -475,71 +443,101 @@ topbar(
 
 <details class="collapsible-card">
     <summary>
-        <span class="summary-title"><span class="summary-icon">🏥</span> รายละเอียดการเข้ารับบริการ (Visit Details & History)</span>
+        <span class="summary-title"><span class="summary-icon">📂</span> เอกสารที่เกี่ยวข้อง (Related Documents)</span>
     </summary>
     <div class="collapsible-body">
-        <div class="grid grid-2">
-            <div class="card">
-                <h2>รายละเอียด Visit / สิทธิรักษา</h2>
-                <div class="document-grid mt-2">
-                    <div class="document-card"><div><strong>ประเภทการมา</strong><span><?= e($visitType) ?> · <?= e($careArea) ?></span></div><span class="badge blue">Visit</span></div>
-                    <div class="document-card"><div><strong>มาด้วยเรื่อง</strong><span><?= e($visitReason) ?></span></div><span class="badge orange">CC</span></div>
-                    <div class="document-card"><div><strong>โรงพยาบาล</strong><span><?= e($hospital) ?></span></div><span class="badge green">Hospital</span></div>
-                    <div class="document-card"><div><strong>สิทธิ/การชำระเงิน</strong><span><?= e($paymentMethod) ?> · <?= e($insuranceDetail) ?></span></div><span class="badge blue">Payment</span></div>
-                    <div class="document-card"><div><strong>กรุ๊ปเลือด</strong><span><?= e($bloodGroup) ?></span></div><span class="badge red">Blood</span></div>
-                    <div class="document-card"><div><strong>สุรา / บุหรี่</strong><span><?= e($alcoholUse) ?> · <?= e($smokingStatus) ?></span></div><span class="badge orange">Behavior</span></div>
-                </div>
+        <?php if (empty($documents)): ?>
+            <?php render_empty_state('ยังไม่มีเอกสาร', 'ยังไม่มีเอกสารที่เกี่ยวข้องกับ Visit นี้'); ?>
+        <?php else: ?>
+            <div class="document-grid">
+                <?php foreach ($documents as $doc): ?>
+                    <?php
+                    $docId = (int) ($doc['id'] ?? 1);
+                    $docTitle = $doc['title'] ?? 'เอกสารสุขภาพ';
+                    $docType = $doc['document_type'] ?? $doc['type'] ?? 'PDF';
+                    $docDate = $doc['created_at'] ?? $doc['date'] ?? '-';
+                    ?>
+                    <a class="document-card" href="<?= e(app_url('doctor/document-view.php?id=' . $docId)) ?>">
+                        <div>
+                            <strong><?= e($docTitle) ?></strong>
+                            <span><?= e($docDate) ?></span>
+                        </div>
+                        <span class="badge blue"><?= e($docType) ?></span>
+                    </a>
+                <?php endforeach; ?>
             </div>
+        <?php endif; ?>
+    </div>
+</details>
 
-            <div class="card">
-                <h2>ผ่าตัด / ประจำเดือน / นัดหมาย</h2>
-                <div class="document-grid mt-2">
-                    <div class="document-card"><div><strong>ผ่าตัด</strong><span><?= e($hasSurgery) ?> · <?= e($surgeryType) ?></span></div><span class="badge red">Surgery</span></div>
-                    <div class="document-card"><div><strong>รายละเอียดผ่าตัด</strong><span><?= e($surgeryNote) ?></span></div><span class="badge orange">Note</span></div>
-                    <div class="document-card"><div><strong>ประจำเดือน</strong><span><?= e($hasMenstruation) ?> · LMP: <?= e($lastMenstrualPeriod) ?></span></div><span class="badge blue">OB</span></div>
-                    <div class="document-card"><div><strong>นัดติดตาม</strong><span><?= e($followupDate) ?> · <?= e($nextAppointmentDetail) ?></span></div><span class="badge green">Follow-up</span></div>
-                </div>
-            </div>
+<details class="collapsible-card">
+    <summary>
+        <span class="summary-title"><span class="summary-icon">🏥</span> รายละเอียด Visit / สิทธิรักษา (Visit Details)</span>
+    </summary>
+    <div class="collapsible-body">
+        <div class="document-grid">
+            <div class="document-card"><div><strong>ประเภทการมา</strong><span><?= e($visitType) ?> · <?= e($careArea) ?></span></div><span class="badge blue">Visit</span></div>
+            <div class="document-card"><div><strong>มาด้วยเรื่อง</strong><span><?= e($visitReason) ?></span></div><span class="badge orange">CC</span></div>
+            <div class="document-card"><div><strong>โรงพยาบาล</strong><span><?= e($hospital) ?></span></div><span class="badge green">Hospital</span></div>
+            <div class="document-card"><div><strong>สิทธิ/การชำระเงิน</strong><span><?= e($paymentMethod) ?> · <?= e($insuranceDetail) ?></span></div><span class="badge blue">Payment</span></div>
+            <div class="document-card"><div><strong>กรุ๊ปเลือด</strong><span><?= e($bloodGroup) ?></span></div><span class="badge red">Blood</span></div>
+            <div class="document-card"><div><strong>สุรา / บุหรี่</strong><span><?= e($alcoholUse) ?> · <?= e($smokingStatus) ?></span></div><span class="badge orange">Behavior</span></div>
         </div>
     </div>
 </details>
 
 <details class="collapsible-card">
     <summary>
-        <span class="summary-title"><span class="summary-icon">🔬</span> ผลตรวจและคำแนะนำเพิ่มเติม (Additional Lab & Vitals)</span>
+        <span class="summary-title"><span class="summary-icon">📅</span> การผ่าตัด / ประจำเดือน / นัดติดตาม (Surgery & OB/GYN)</span>
     </summary>
     <div class="collapsible-body">
-        <div class="grid grid-2">
-            <div class="card">
-                <h2>ผลตรวจเพิ่มเติม</h2>
-                <div class="document-grid mt-2">
-                    <div class="document-card"><div><strong>ตรวจที่สั่ง</strong><span><?= e($investigations) ?></span></div><span class="badge green">Orders</span></div>
-                    <div class="document-card"><div><strong>ผลตรวจเลือด</strong><span><?= e($labResults) ?></span></div><span class="badge red">Blood</span></div>
-                    <div class="document-card"><div><strong>ผลปัสสาวะ</strong><span><?= e($urineResults) ?></span></div><span class="badge blue">Urine</span></div>
-                    <div class="document-card"><div><strong>X-ray</strong><span><?= e($xrayResults) ?></span></div><span class="badge orange">X-ray</span></div>
-                    <div class="document-card"><div><strong>MRI</strong><span><?= e($mriResults) ?></span></div><span class="badge orange">MRI</span></div>
-                    <div class="document-card"><div><strong>Imaging อื่น ๆ</strong><span><?= e($imagingResults) ?></span></div><span class="badge blue">Imaging</span></div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h2>คำแนะนำให้ผู้ป่วย</h2>
-                <div class="note-box mt-2"><?= nl2br(e($doctorEducation)) ?></div>
-                <h2 class="mt-2">ข้อมูลร่างกายเพิ่มเติม</h2>
-                <div class="document-grid mt-2">
-                    <div class="document-card"><div><strong>น้ำหนัก / ส่วนสูง</strong><span><?= e($weightKg) ?> kg · <?= e($heightCm) ?> cm</span></div><span class="badge blue">Body</span></div>
-                    <div class="document-card"><div><strong>Temp / RR / SpO₂</strong><span><?= e($temperature) ?>°C · RR <?= e($respiratoryRate) ?> · SpO₂ <?= e($oxygenSaturation) ?>%</span></div><span class="badge green">Vital</span></div>
-                </div>
-            </div>
+        <div class="document-grid">
+            <div class="document-card"><div><strong>ผ่าตัด</strong><span><?= e($hasSurgery) ?> · <?= e($surgeryType) ?></span></div><span class="badge red">Surgery</span></div>
+            <div class="document-card"><div><strong>รายละเอียดผ่าตัด</strong><span><?= e($surgeryNote) ?></span></div><span class="badge orange">Note</span></div>
+            <div class="document-card"><div><strong>ประจำเดือน</strong><span><?= e($hasMenstruation) ?> · LMP: <?= e($lastMenstrualPeriod) ?></span></div><span class="badge blue">OB</span></div>
+            <div class="document-card"><div><strong>นัดติดตาม</strong><span><?= e($followupDate) ?> · <?= e($nextAppointmentDetail) ?></span></div><span class="badge green">Follow-up</span></div>
         </div>
     </div>
 </details>
 
-<section class="card mt-2">
-    <h2>Doctor Note</h2>
+<details class="collapsible-card">
+    <summary>
+        <span class="summary-title"><span class="summary-icon">🔬</span> ผลตรวจเพิ่มเติม (Additional Lab Results)</span>
+    </summary>
+    <div class="collapsible-body">
+        <div class="document-grid">
+            <div class="document-card"><div><strong>ตรวจที่สั่ง</strong><span><?= e($investigations) ?></span></div><span class="badge green">Orders</span></div>
+            <div class="document-card"><div><strong>ผลตรวจเลือด</strong><span><?= e($labResults) ?></span></div><span class="badge red">Blood</span></div>
+            <div class="document-card"><div><strong>ผลปัสสาวะ</strong><span><?= e($urineResults) ?></span></div><span class="badge blue">Urine</span></div>
+            <div class="document-card"><div><strong>X-ray</strong><span><?= e($xrayResults) ?></span></div><span class="badge orange">X-ray</span></div>
+            <div class="document-card"><div><strong>MRI</strong><span><?= e($mriResults) ?></span></div><span class="badge orange">MRI</span></div>
+            <div class="document-card"><div><strong>Imaging อื่น ๆ</strong><span><?= e($imagingResults) ?></span></div><span class="badge blue">Imaging</span></div>
+        </div>
+    </div>
+</details>
 
-    <div style="background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;">
-        <p style="margin-top:0;">
+<details class="collapsible-card">
+    <summary>
+        <span class="summary-title"><span class="summary-icon">💡</span> คำแนะนำสำหรับผู้ป่วย (Instructions & Vitals)</span>
+    </summary>
+    <div class="collapsible-body">
+        <div class="note-box">
+            <?= nl2br(e($doctorEducation)) ?>
+        </div>
+        <h2 class="mt-2">ข้อมูลร่างกายเพิ่มเติม</h2>
+        <div class="document-grid mt-2">
+            <div class="document-card"><div><strong>น้ำหนัก / ส่วนสูง</strong><span><?= e($weightKg) ?> kg · <?= e($heightCm) ?> cm</span></div><span class="badge blue">Body</span></div>
+            <div class="document-card"><div><strong>Temp / RR / SpO₂</strong><span><?= e($temperature) ?>°C · RR <?= e($respiratoryRate) ?> · SpO₂ <?= e($oxygenSaturation) ?>%</span></div><span class="badge green">Vital</span></div>
+        </div>
+    </div>
+</details>
+
+<details class="collapsible-card">
+    <summary>
+        <span class="summary-title"><span class="summary-icon">📝</span> บันทึกของแพทย์ (Doctor Note)</span>
+    </summary>
+    <div class="collapsible-body">
+        <p>
             Visit นี้บันทึกไว้ในระบบ USE MED เพื่อใช้ติดตามการรักษาของผู้ป่วย
             แพทย์สามารถดู Timeline, เอกสาร และผลประเมินความเสี่ยงประกอบการรักษาครั้งถัดไปได้
         </p>
@@ -558,7 +556,7 @@ topbar(
             </a>
         </div>
     </div>
-</section>
+</details>
 
 <?php
 page_end();
