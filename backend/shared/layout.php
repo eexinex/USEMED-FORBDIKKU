@@ -19,7 +19,7 @@ function page_start(string $title = 'USE MED', string $role = 'guest', string $a
     <title><?= e($title) ?> | USE MED</title>
     <!-- DEBUG: APP_URL = "<?= e(APP_URL) ?>" -->
     <!-- DEBUG: SCRIPT_NAME = "<?= e($_SERVER['SCRIPT_NAME'] ?? '') ?>" -->
-    <link rel="stylesheet" href="<?= e(app_url('assets/usemed.css')) ?>?v=step24-debug">
+    <link rel="stylesheet" href="<?= e(app_url('assets/usemed.css')) ?>?v=step25-solid-clean">
 </head>
 <body class="role-<?= e($role) ?> active-<?= e($active) ?>">
 <div class="<?= $role === 'guest' ? 'guest-shell' : 'app-shell' ?>">

@@ -1,6 +1,6 @@
 <?php
 // public/patient/portal.php
-// Elder-friendly patient home: fewer clicks, clear summary, reminders, and direct actions.
+// Clean, solid, and focused patient home
 
 declare(strict_types=1);
 
@@ -14,7 +14,6 @@ $user = current_user();
 $patient = demo_patient($user['hn'] ?? null);
 $visits = demo_visits();
 $documents = demo_documents();
-$selfAssessment = null;
 
 if (db_is_connected()) {
     $patientRow = db_fetch_one(
@@ -24,210 +23,104 @@ if (db_is_connected()) {
 
     if ($patientRow) {
         $patient = array_merge($patient, $patientRow);
-
+        
         $dbVisits = db_fetch_all(
             'SELECT v.*, d.full_name AS doctor_name
              FROM visits v
              LEFT JOIN doctors d ON d.id = v.doctor_id
              WHERE v.patient_id = :patient_id
              ORDER BY v.visit_date DESC, v.id DESC
-             LIMIT 5',
+             LIMIT 1',
             ['patient_id' => (int) $patientRow['id']]
         );
         if ($dbVisits) { $visits = $dbVisits; }
-
-        $dbDocuments = db_fetch_all(
-            'SELECT * FROM documents
-             WHERE patient_id = :patient_id
-             ORDER BY created_at DESC, id DESC
-             LIMIT 5',
-            ['patient_id' => (int) $patientRow['id']]
-        );
-        if ($dbDocuments) { $documents = $dbDocuments; }
-
-        $selfAssessment = db_fetch_one(
-            'SELECT * FROM patient_self_assessments
-             WHERE patient_id = :patient_id OR hn = :hn
-             ORDER BY created_at DESC, id DESC
-             LIMIT 1',
-            ['patient_id' => (int) $patientRow['id'], 'hn' => (string)($patientRow['hn'] ?? '')]
-        );
     }
 }
 
 $latestVisit = $visits[0] ?? [];
-$latestDocument = $documents[0] ?? [];
 
-$riskLevel = $latestVisit['risk'] ?? $latestVisit['risk_level'] ?? $patient['risk_level'] ?? 'Medium';
 $riskScore = (int) ($latestVisit['risk_score'] ?? $patient['risk_score'] ?? 62);
-$riskBadge = badge_class((string) $riskLevel);
+$careStatus = $riskScore >= 75 ? 'ต้องติดตามใกล้ชิด' : 'กำลังดูแลต่อเนื่อง';
 
-$paymentMethod = usemed_visit_field($latestVisit, 'payment_method', (string) ($patient['payment_method'] ?? 'ยังไม่มีข้อมูลสิทธิ'));
-$insuranceDetail = usemed_visit_field($latestVisit, 'insurance_detail', (string) ($patient['insurance_detail'] ?? 'ยังไม่มีรายละเอียด'));
-$visitHospital = usemed_visit_field($latestVisit, 'hospital', (string) ($patient['hospital'] ?? '-'));
-$educationText = usemed_visit_field($latestVisit, 'doctor_education', 'ยังไม่มีคำแนะนำล่าสุดจากแพทย์');
-$nextAppointmentDetail = usemed_visit_field($latestVisit, 'next_appointment_detail', (string) ($patient['next_appointment'] ?? '-'));
 $followupDate = usemed_visit_field($latestVisit, 'followup_date', (string) ($patient['next_appointment'] ?? '-'));
+$appointmentDate = $followupDate !== '-' ? $followupDate : 'ยังไม่มีนัดหมายใหม่';
+$appointmentTime = usemed_visit_field($latestVisit, 'next_appointment_time', '');
+
 $doctorName = $latestVisit['doctor'] ?? $latestVisit['doctor_name'] ?? 'ทีมแพทย์';
 $lastVisitDate = $latestVisit['date'] ?? $latestVisit['visit_date'] ?? '-';
-$lastVisitTitle = $latestVisit['title'] ?? $latestVisit['diagnosis'] ?? 'Visit ล่าสุด';
-$lastDocTitle = $latestDocument['title'] ?? 'ยังไม่มีเอกสารล่าสุด';
-$lastDocDate = $latestDocument['created_at'] ?? $latestDocument['date'] ?? '-';
-$selfDate = $selfAssessment['created_at'] ?? '-';
-$selfSummary = $selfAssessment ? 'ประเมินล่าสุดแล้วเมื่อ ' . $selfDate : 'ยังไม่เคยประเมินสุขภาพด้วยตนเอง';
-
-$todoItems = [
-    [
-        'title' => 'เช็กวันนัด',
-        'desc' => $followupDate !== '-' ? 'วันนัดติดตาม: ' . $followupDate : 'ยังไม่มีวันนัดในระบบ',
-        'href' => app_url('patient/timeline.php'),
-        'tone' => 'green',
-    ],
-    [
-        'title' => 'อ่านคำแนะนำแพทย์',
-        'desc' => $educationText,
-        'href' => app_url('patient/visit-detail.php?id=' . (int)($latestVisit['id'] ?? 1)),
-        'tone' => 'blue',
-    ],
-    [
-        'title' => 'ประเมินสุขภาพตัวเอง',
-        'desc' => 'กรอกเบาหวาน/ความดันเพื่อรับคำแนะนำส่วนตัว ข้อมูลไม่ส่งให้แพทย์อัตโนมัติ',
-        'href' => app_url('patient/self-assessment.php'),
-        'tone' => 'orange',
-    ],
-];
+$educationText = usemed_visit_field($latestVisit, 'doctor_education', 'ยังไม่มีคำแนะนำล่าสุดจากแพทย์');
 
 page_start('Patient Portal', 'patient', 'portal');
-
-$bpSys = usemed_visit_field($latestVisit, 'systolic', '128');
-$bpDia = usemed_visit_field($latestVisit, 'diastolic', '78');
-$glucose = usemed_visit_field($latestVisit, 'glucose', '145');
-$weight = usemed_visit_field($latestVisit, 'weight_kg', (string)($patient['weight_kg'] ?? '68'));
-$appointmentDate = $followupDate !== '-' ? $followupDate : '29 พ.ค. 2568';
-$appointmentTime = usemed_visit_field($latestVisit, 'next_appointment_time', '09:00 น.');
-$careStatus = $riskScore >= 75 ? 'ต้องติดตามใกล้ชิด' : 'กำลังดูแลต่อเนื่อง';
-$medTitle = str_contains(mb_strtolower((string)($patient['disease'] ?? ''), 'UTF-8'), 'diabetes') || str_contains((string)($patient['disease'] ?? ''), 'เบาหวาน') ? 'ยาควบคุมน้ำตาล' : 'ยาประจำตัว';
 ?>
 
-
-
-
-<section class="patient-premium-page">
-    <section class="patient-hero-card">
-        <div class="patient-identity">
-            <div class="patient-avatar-xl"><?= e(initials($patient['full_name'] ?? 'ผู้ป่วย')) ?></div>
+<div style="max-width: 800px; margin: 0 auto; padding: 24px 16px;">
+    
+    <!-- Profile Card (Solid, No Gradient) -->
+    <div class="card" style="padding: 24px; margin-bottom: 24px; border-left: 6px solid var(--primary);">
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--bg2); color: var(--primary); font-size: 28px; font-weight: 800; display: flex; align-items: center; justify-content: center;">
+                <?= e(initials($patient['full_name'] ?? 'ผู้ป่วย')) ?>
+            </div>
             <div>
-                <div class="patient-name-row">
-                    <h1><?= e($patient['full_name'] ?? 'ผู้ป่วย') ?></h1>
-                    <span class="soft-tag">ผู้ป่วย</span>
+                <h1 style="margin: 0; font-size: 28px; color: var(--ink);"><?= e($patient['full_name'] ?? 'ผู้ป่วย') ?></h1>
+                <p style="margin: 4px 0 0; color: var(--muted); font-size: 16px;">
+                    HN: <?= e($patient['hn'] ?? '-') ?> · 
+                    อายุ <?= e((string)($patient['age'] ?? '-')) ?> ปี · 
+                    <?= e((string)($patient['disease'] ?? 'ทั่วไป')) ?>
+                </p>
+                <div style="margin-top: 8px;">
+                    <span class="badge" style="background: var(--bg); color: var(--muted); border: 1px solid var(--line);">สถานะ: <?= e($careStatus) ?></span>
                 </div>
-                <p><?= e($patient['hn'] ?? '-') ?> · <?= e($patient['gender'] ?? '-') ?> · อายุ <?= e((string)($patient['age'] ?? '-')) ?> ปี</p>
-                <strong><?= e((string)($patient['disease'] ?? 'ข้อมูลสุขภาพ')) ?></strong>
             </div>
         </div>
-        <div class="patient-hero-divider"></div>
-        <div class="patient-hero-stat">
-            <span class="ux-card-icon calendar"><?= icon_svg('calendar') ?></span>
-            <small>เข้ารับการรักษาล่าสุด</small>
-            <strong><?= e($lastVisitDate) ?></strong>
-            <p><?= e($doctorName) ?></p>
-        </div>
-        <div class="patient-hero-stat">
-            <span class="ux-card-icon heart"><?= icon_svg('icu') ?></span>
-            <small>สถานะการดูแล</small>
-            <strong><?= e($careStatus) ?></strong>
-            <p>ติดตามอาการตามแผนการรักษา</p>
-        </div>
-    </section>
+    </div>
 
-    <div class="section-label">สิ่งที่ควรทราบ</div>
-    <section class="patient-reminder-grid">
-        <a class="patient-reminder-card purple" href="<?= e(app_url('patient/timeline.php')) ?>">
-            <span class="ux-card-icon"><?= icon_svg('calendar') ?></span>
-            <div><small>นัดหมายครั้งถัดไป</small><strong><?= e($appointmentDate) ?></strong><p><?= e($appointmentTime) ?> · แผนกอายุรกรรม</p></div>
-            <i>›</i>
-        </a>
-        <a class="patient-reminder-card green" href="<?= e(app_url('patient/documents.php')) ?>">
-            <span class="ux-card-icon"><?= icon_svg('rx') ?></span>
-            <div><small>ใกล้ถึงเวลายา</small><strong><?= e($medTitle) ?></strong><p>ตรวจสอบรายการยาและใบสั่งยา</p></div>
-            <i>›</i>
-        </a>
-        <a class="patient-reminder-card amber" href="<?= e(app_url('patient/self-assessment.php')) ?>">
-            <span class="ux-card-icon"><?= icon_svg('assessment') ?></span>
-            <div><small>ติดตามอาการ</small><strong>บันทึกสุขภาพประจำสัปดาห์</strong><p>ประเมินเบาหวาน / ความดัน</p></div>
-            <i>›</i>
-        </a>
-        <a class="patient-reminder-card blue" href="<?= e(app_url('patient/documents.php')) ?>">
-            <span class="ux-card-icon"><?= icon_svg('doc') ?></span>
-            <div><small>ผลตรวจแนะนำ</small><strong>ตรวจเลือดประจำ 3 เดือน</strong><p>ดูผลตรวจและเอกสารล่าสุด</p></div>
-            <i>›</i>
-        </a>
-    </section>
-
-    <section class="patient-main-grid">
-        <article class="patient-assessment-card">
-            <div>
-                <span class="card-eyebrow">ประเมินสุขภาพด้วยตนเอง</span>
-                <h2>เบาหวาน / ความดัน</h2>
-                <p>ติดตามสุขภาพของคุณง่าย ๆ สม่ำเสมอ เพื่อรับคำแนะนำเบื้องต้นแบบเป็นส่วนตัว</p>
-                <div class="patient-benefits">
-                    <span>แนวโน้มสุขภาพ</span>
-                    <span>คำแนะนำเฉพาะคุณ</span>
-                    <span>ข้อมูลเป็นความลับ</span>
-                </div>
-                <a class="gradient-action" href="<?= e(app_url('patient/self-assessment.php')) ?>">เริ่มประเมินตอนนี้ <b>›</b></a>
+    <!-- Main Content Grid -->
+    <div style="display: grid; gap: 24px;">
+        
+        <!-- Next Appointment -->
+        <div class="card" style="padding: 24px; border: 1px solid var(--line);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2 style="margin: 0; font-size: 20px; color: var(--ink);">📅 นัดหมายครั้งถัดไป</h2>
+                <a href="<?= e(app_url('patient/timeline.php')) ?>" style="color: var(--primary); font-size: 14px; font-weight: bold;">ดูทั้งหมด</a>
             </div>
-            <div class="assessment-illustration">
-                <span><?= icon_svg('assessment') ?></span>
+            <div style="background: var(--bg); padding: 16px; border-radius: 12px;">
+                <strong style="display: block; font-size: 22px; color: var(--primary-dark);"><?= e($appointmentDate) ?></strong>
+                <?php if ($appointmentTime): ?>
+                    <span style="color: var(--muted); display: block; margin-top: 4px;">เวลา: <?= e($appointmentTime) ?></span>
+                <?php endif; ?>
             </div>
-        </article>
+        </div>
 
-        <article class="patient-visit-card">
-            <div class="card-headline">
-                <div><span class="card-eyebrow">สรุปล่าสุด</span><h2>การเข้ารับการรักษา</h2></div>
-                <a href="<?= e(app_url('patient/timeline.php')) ?>">ดูประวัติทั้งหมด</a>
+        <!-- Latest Visit -->
+        <div class="card" style="padding: 24px; border: 1px solid var(--line);">
+            <h2 style="margin: 0 0 16px; font-size: 20px; color: var(--ink);">🩺 สรุปการตรวจล่าสุด</h2>
+            <div style="margin-bottom: 16px;">
+                <span style="color: var(--muted); font-size: 14px;">วันที่:</span>
+                <strong style="display: block; font-size: 16px; margin-bottom: 8px;"><?= e($lastVisitDate) ?> (<?= e($doctorName) ?>)</strong>
+                
+                <span style="color: var(--muted); font-size: 14px;">คำแนะนำจากแพทย์:</span>
+                <p style="margin: 4px 0 0; background: var(--bg2); padding: 12px; border-radius: 8px; color: var(--ink); line-height: 1.6;">
+                    <?= e($educationText) ?>
+                </p>
             </div>
-            <p><?= e($lastVisitDate) ?> · <?= e($doctorName) ?></p>
-            <strong><?= e($lastVisitTitle) ?></strong>
-            <div class="vital-grid">
-                <div><span>ความดันโลหิต</span><b><?= e($bpSys) ?>/<?= e($bpDia) ?></b><small>mmHg</small></div>
-                <div><span>น้ำตาลในเลือด</span><b><?= e($glucose) ?></b><small>mg/dL</small></div>
-                <div><span>น้ำหนัก</span><b><?= e($weight) ?></b><small>กก.</small></div>
-                <div><span>คำแนะนำแพทย์</span><b>ต่อเนื่อง</b><small><?= e(mb_strimwidth($educationText, 0, 60, '...', 'UTF-8')) ?></small></div>
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <a href="<?= e(app_url('patient/visit-detail.php?id=' . (int)($latestVisit['id'] ?? 1))) ?>" class="btn btn-primary" style="flex: 1; text-align: center;">ดูรายละเอียดการตรวจ</a>
             </div>
-        </article>
-    </section>
+        </div>
 
-    <section class="patient-results-section">
-        <div class="card-headline">
-            <div><span class="card-eyebrow">เอกสาร / ผลตรวจล่าสุด</span><h2>ข้อมูลสุขภาพของฉัน</h2></div>
-            <a href="<?= e(app_url('patient/documents.php')) ?>">ดูทั้งหมด ›</a>
+        <!-- Quick Actions (Solid Buttons) -->
+        <div class="card" style="padding: 24px; border: 1px solid var(--line);">
+            <h2 style="margin: 0 0 16px; font-size: 20px; color: var(--ink);">⚡ บริการด่วน</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <a href="<?= e(app_url('patient/documents.php')) ?>" class="btn" style="background: var(--bg); border: 1px solid var(--line); color: var(--ink); text-align: center; justify-content: center;">📑 ดูเอกสารทางการแพทย์</a>
+                <a href="<?= e(app_url('patient/self-assessment.php')) ?>" class="btn" style="background: var(--bg); border: 1px solid var(--line); color: var(--ink); text-align: center; justify-content: center;">📝 ประเมินสุขภาพตนเอง</a>
+                <a href="<?= e(app_url('support.php')) ?>" class="btn" style="background: var(--bg); border: 1px solid var(--line); color: var(--ink); text-align: center; justify-content: center;">💬 ติดต่อเจ้าหน้าที่</a>
+            </div>
         </div>
-        <div class="result-card-row">
-            <?php if (empty($documents)): ?>
-                <div class="result-mini-card"><span><?= icon_svg('doc') ?></span><strong>ยังไม่มีเอกสาร</strong><small>เมื่อมีเอกสารจะแสดงที่นี่</small></div>
-            <?php else: ?>
-                <?php foreach (array_slice($documents, 0, 5) as $index => $doc): ?>
-                    <?php $id = (int)($doc['id'] ?? 1); ?>
-                    <a class="result-mini-card" href="<?= e(app_url('patient/document-view.php?id=' . $id)) ?>">
-                        <span><?= icon_svg($index === 1 ? 'assessment' : 'doc') ?></span>
-                        <strong><?= e($doc['title'] ?? 'เอกสารสุขภาพ') ?></strong>
-                        <small><?= e($doc['document_type'] ?? $doc['type'] ?? 'PDF') ?> · <?= e($doc['created_at'] ?? $doc['date'] ?? '-') ?></small>
-                    </a>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
-    </section>
 
-    <section class="quick-service-section">
-        <div class="section-label">บริการด่วน</div>
-        <div class="quick-service-grid">
-            <a href="<?= e(app_url('patient/timeline.php')) ?>"><span><?= icon_svg('calendar') ?></span><strong>นัดหมายแพทย์</strong><small>จองหรือเปลี่ยนวันนัด</small><i>›</i></a>
-            <a href="<?= e(app_url('support.php')) ?>"><span><?= icon_svg('message') ?></span><strong>ปรึกษาออนไลน์</strong><small>แจ้งคำถามถึงเจ้าหน้าที่</small><i>›</i></a>
-            <a href="<?= e(app_url('support.php')) ?>"><span><?= icon_svg('help') ?></span><strong>แจ้งปัญหา</strong><small>รายงานปัญหาในระบบ</small><i>›</i></a>
-            <a href="<?= e(app_url('support.php')) ?>"><span><?= icon_svg('headset') ?></span><strong>ติดต่อโรงพยาบาล</strong><small>เบอร์โทร / แผนที่</small><i>›</i></a>
-        </div>
-    </section>
-</section>
+    </div>
+
+</div>
 
 <?php page_end(); ?>
