@@ -776,11 +776,10 @@ function usemed_insert_available(string $table, array $data): bool
 
 function usemed_ensure_extended_schema(): void
 {
-    static $done = false;
-    if ($done) {
+    $lockFile = sys_get_temp_dir() . '/usemed_schema_done.lock';
+    if (file_exists($lockFile)) {
         return;
     }
-    $done = true;
 
     if (!db_is_connected()) {
         return;
@@ -1053,15 +1052,15 @@ function usemed_ensure_extended_schema(): void
     )");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_patient ON followup_tasks (patient_id)");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_status ON followup_tasks (status)");
+    file_put_contents($lockFile, '1');
 }
 
 function usemed_seed_demo_data(): void
 {
-    static $done = false;
-    if ($done) {
+    $lockFile = sys_get_temp_dir() . '/usemed_seed_done.lock';
+    if (file_exists($lockFile)) {
         return;
     }
-    $done = true;
 
     if (!db_is_connected()) {
         return;
@@ -1148,6 +1147,8 @@ function usemed_seed_demo_data(): void
             ]
         );
     }
+
+    file_put_contents($lockFile, '1');
 }
 
 

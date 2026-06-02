@@ -121,11 +121,10 @@ function ai_demo_result(): array
 
 function usemed_ai_ensure_population_schema(): void
 {
-    static $done = false;
-    if ($done) {
+    $lockFile = sys_get_temp_dir() . '/usemed_ai_schema_done.lock';
+    if (file_exists($lockFile)) {
         return;
     }
-    $done = true;
 
     if (!db_is_connected()) {
         return;
@@ -183,6 +182,7 @@ function usemed_ai_ensure_population_schema(): void
     )");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_patient ON followup_tasks (patient_id)");
     db_execute("CREATE INDEX IF NOT EXISTS idx_followup_status ON followup_tasks (status)");
+    file_put_contents($lockFile, '1');
 }
 
 function usemed_ai_float($value): ?float
