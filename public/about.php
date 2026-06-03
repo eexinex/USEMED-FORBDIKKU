@@ -14,7 +14,7 @@ page_start('About USE MED', 'guest');
         <p style="margin: 12px 0 32px; font-size: 18px; color: var(--muted);">ระบบจัดการข้อมูลสุขภาพสำหรับผู้ป่วยและแพทย์</p>
         
         <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line);">
-            <h2 style="font-size: 24px; color: var(--ink); margin: 0 0 8px;">ทีม KKU Is not here</h2>
+            <h2 style="font-size: 24px; color: var(--ink); margin: 0 0 8px;">ทีม Absolute Zero</h2>
             <p style="color: var(--muted); margin: 0 0 24px;">รายชื่อสมาชิกผู้พัฒนาและออกแบบระบบ USE MED</p>
             
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;">
@@ -53,7 +53,7 @@ page_start('About USE MED', 'guest');
         </div>
         
         <div style="margin-top: 32px; padding: 16px; background: var(--bg); border-radius: 12px; color: var(--muted); font-size: 14px; text-align: center; border: 1px solid var(--line);">
-            © <?= date('Y') ?> USE MED. Created by <strong>KKU Is not here</strong>. All rights reserved.
+            © <?= date('Y') ?> USE MED. Created by <strong>Absolute Zero</strong>. All rights reserved.
         </div>
         
         <div style="margin-top: 32px; display: flex; gap: 12px; flex-wrap: wrap;">
